@@ -59,8 +59,8 @@ Gold 冻结后不得根据 DeepSeek 预测结果反向修改。若未来调 Prom
 - 工程合同：Contract Success Rate
 
 ## 8. 审阅与版本
-当前全部 `review_status=pending_final_review`。
-最终由项目负责人审阅；确认后改为 `approved`。若标签调整，应记录理由并提升数据集版本。
+当前全部 `review_status=approved`。
+已由项目负责人审阅确认。若标签调整，应记录理由并提升数据集版本。
 论文/答辩建议表述：**项目自建治理决策评测集，经项目组审阅确认**。
 
 ## 9. 数据统计
