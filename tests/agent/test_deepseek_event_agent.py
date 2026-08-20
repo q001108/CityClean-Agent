@@ -94,6 +94,7 @@ def test_fake_structured_model_returns_valid_policy_decision() -> None:
     assert "JSON" in model.messages[0][0][1]
     assert "event_type" in model.messages[0][0][1]
     assert "risk_level" in model.messages[0][0][1]
+    assert "中文" in model.messages[0][0][1]
 
 
 def test_event_type_mismatch_is_rejected() -> None:
@@ -108,7 +109,7 @@ def test_unknown_priority_target_is_rejected() -> None:
     payload = valid_payload()
     payload["priority_targets"] = ["unknown"]
 
-    with pytest.raises(DeepSeekEventAgentError, match="unknown priority target"):
+    with pytest.raises(DeepSeekEventAgentError, match="priority target"):
         DeepSeekEventAgent(FakeModel(payload)).decide(make_event(), make_state())
 
 
@@ -198,7 +199,7 @@ def test_state_summary_includes_only_present_natural_language_description() -> N
 
 
 def test_fake_model_failure_is_explicit() -> None:
-    with pytest.raises(DeepSeekEventAgentError, match="invocation failed"):
+    with pytest.raises(DeepSeekEventAgentError, match="模型调用失败"):
         DeepSeekEventAgent(FakeModel(error=RuntimeError("network failure"))).decide(
             make_event(), make_state()
         )
@@ -227,7 +228,7 @@ def test_missing_api_key_fails_explicitly_without_constructing_provider(monkeypa
     monkeypatch.setattr(deepseek_module, "load_dotenv", lambda: False)
     monkeypatch.delenv("DEEPSEEK_API_KEY", raising=False)
 
-    with pytest.raises(DeepSeekEventAgentError, match="not configured"):
+    with pytest.raises(DeepSeekEventAgentError, match="未配置"):
         DeepSeekEventAgent()
 
 

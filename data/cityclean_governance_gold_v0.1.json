@@ -63,7 +63,7 @@
     },
     "annotation": {
       "rationale": "主要矛盾是满溢恢复，无高人流或敏感场所，应优先清运但无需升级为紧急响应。",
-      "review_status": "pending_final_review",
+      "review_status": "approved",
       "label_source": "project_self_built_reference_annotation"
     }
   },
@@ -131,7 +131,7 @@
     },
     "annotation": {
       "rationale": "医院入口属于高敏感卫生场所，满溢已经影响患者与陪护人员频繁通行，应优先保障入口通行与院区卫生。",
-      "review_status": "pending_final_review",
+      "review_status": "approved",
       "label_source": "project_self_built_reference_annotation"
     }
   },
@@ -199,7 +199,7 @@
     },
     "annotation": {
       "rationale": "已满溢但处于低人流时段，可按常规满溢治理优先处理。",
-      "review_status": "pending_final_review",
+      "review_status": "approved",
       "label_source": "project_self_built_reference_annotation"
     }
   },
@@ -267,7 +267,7 @@
     },
     "annotation": {
       "rationale": "放学高峰叠加未成年人高人流与异味投诉，需要尽快控制垃圾积存对校门通行和放学环境的影响。",
-      "review_status": "pending_final_review",
+      "review_status": "approved",
       "label_source": "project_self_built_reference_annotation"
     }
   },
@@ -335,7 +335,7 @@
     },
     "annotation": {
       "rationale": "人群暴露低且资源充足，主要目标是恢复清运服务。",
-      "review_status": "pending_final_review",
+      "review_status": "approved",
       "label_source": "project_self_built_reference_annotation"
     }
   },
@@ -403,7 +403,7 @@
     },
     "annotation": {
       "rationale": "生鲜市场卫生敏感，异味与湿垃圾使风险高于普通满溢。",
-      "review_status": "pending_final_review",
+      "review_status": "approved",
       "label_source": "project_self_built_reference_annotation"
     }
   },
@@ -471,7 +471,7 @@
     },
     "annotation": {
       "rationale": "典型单点满溢，需要优先清运但尚未出现更高等级公共卫生因素。",
-      "review_status": "pending_final_review",
+      "review_status": "approved",
       "label_source": "project_self_built_reference_annotation"
     }
   },
@@ -539,7 +539,7 @@
     },
     "annotation": {
       "rationale": "养老机构属于脆弱人群敏感场所，散落垃圾已影响通行。",
-      "review_status": "pending_final_review",
+      "review_status": "approved",
       "label_source": "project_self_built_reference_annotation"
     }
   },
@@ -607,7 +607,7 @@
     },
     "annotation": {
       "rationale": "有明确满溢治理需求，但客流和资源条件可控。",
-      "review_status": "pending_final_review",
+      "review_status": "approved",
       "label_source": "project_self_built_reference_annotation"
     }
   },
@@ -675,7 +675,7 @@
     },
     "annotation": {
       "rationale": "节庆活动高人流使普通满溢升级为时效敏感治理问题，需要控制积存对活动通行和环境卫生的持续影响。",
-      "review_status": "pending_final_review",
+      "review_status": "approved",
       "label_source": "project_self_built_reference_annotation"
     }
   },
@@ -743,7 +743,7 @@
     },
     "annotation": {
       "rationale": "时效窗口宽且无即时风险，可在服务覆盖与行驶成本间保持平衡。",
-      "review_status": "pending_final_review",
+      "review_status": "approved",
       "label_source": "project_self_built_reference_annotation"
     }
   },
@@ -811,7 +811,7 @@
     },
     "annotation": {
       "rationale": "高人流疏散与快速积存形成明确时效压力。",
-      "review_status": "pending_final_review",
+      "review_status": "approved",
       "label_source": "project_self_built_reference_annotation"
     }
   },
@@ -879,7 +879,7 @@
     },
     "annotation": {
       "rationale": "已进入临时优先任务且存在服务投诉，应加快处理但无重大公共风险。",
-      "review_status": "pending_final_review",
+      "review_status": "approved",
       "label_source": "project_self_built_reference_annotation"
     }
   },
@@ -947,7 +947,7 @@
     },
     "annotation": {
       "rationale": "急诊入口通行与卫生高度敏感，应以最高时效等级优先处置。",
-      "review_status": "pending_final_review",
+      "review_status": "approved",
       "label_source": "project_self_built_reference_annotation"
     }
   },
@@ -1015,7 +1015,7 @@
     },
     "annotation": {
       "rationale": "任务有优先诉求但没有即时人群暴露，可平衡时效与路线成本。",
-      "review_status": "pending_final_review",
+      "review_status": "approved",
       "label_source": "project_self_built_reference_annotation"
     }
   },
@@ -1083,7 +1083,7 @@
     },
     "annotation": {
       "rationale": "放学高峰的高人流与临时垃圾积存使任务具有明显时效敏感性，治理目标是保障校门区域卫生、通行与放学秩序。",
-      "review_status": "pending_final_review",
+      "review_status": "approved",
       "label_source": "project_self_built_reference_annotation"
     }
   },
@@ -1151,7 +1151,7 @@
     },
     "annotation": {
       "rationale": "明确临时优先请求，虽可短时暂存但仍需在较紧窗口内完成。",
-      "review_status": "pending_final_review",
+      "review_status": "approved",
       "label_source": "project_self_built_reference_annotation"
     }
   },
@@ -1219,7 +1219,7 @@
     },
     "annotation": {
       "rationale": "湿垃圾靠近食品加工区域并出现明显异味，存在较高食品卫生风险，应较快处置以降低对加工环境和市场卫生的影响。",
-      "review_status": "pending_final_review",
+      "review_status": "approved",
       "label_source": "project_self_built_reference_annotation"
     }
   },
@@ -1287,7 +1287,7 @@
     },
     "annotation": {
       "rationale": "低峰、低人流且资源充足，无需抢占式响应。",
-      "review_status": "pending_final_review",
+      "review_status": "approved",
       "label_source": "project_self_built_reference_annotation"
     }
   },
@@ -1355,7 +1355,7 @@
     },
     "annotation": {
       "rationale": "大型赛事散场阶段人流密集且垃圾快速增加，需要保障出口区域卫生、人员疏散和通行。",
-      "review_status": "pending_final_review",
+      "review_status": "approved",
       "label_source": "project_self_built_reference_annotation"
     }
   },
@@ -1420,7 +1420,7 @@
     },
     "annotation": {
       "rationale": "资源冗余充足，重点是平稳恢复并减少无谓改派。",
-      "review_status": "pending_final_review",
+      "review_status": "approved",
       "label_source": "project_self_built_reference_annotation"
     }
   },
@@ -1485,7 +1485,7 @@
     },
     "annotation": {
       "rationale": "故障直接影响医院周边高优任务且剩余窗口较紧，治理重点由减少改派转为及时恢复敏感区域服务。",
-      "review_status": "pending_final_review",
+      "review_status": "approved",
       "label_source": "project_self_built_reference_annotation"
     }
   },
@@ -1547,7 +1547,7 @@
     },
     "annotation": {
       "rationale": "故障对当前服务几乎无实质影响，不需要主动制造重调度。",
-      "review_status": "pending_final_review",
+      "review_status": "approved",
       "label_source": "project_self_built_reference_annotation"
     }
   },
@@ -1612,7 +1612,7 @@
     },
     "annotation": {
       "rationale": "高峰积压与任务中断叠加，恢复时效成为主要治理目标。",
-      "review_status": "pending_final_review",
+      "review_status": "approved",
       "label_source": "project_self_built_reference_annotation"
     }
   },
@@ -1677,7 +1677,7 @@
     },
     "annotation": {
       "rationale": "备用资源充分，适合以最小扰动完成任务转移。",
-      "review_status": "pending_final_review",
+      "review_status": "approved",
       "label_source": "project_self_built_reference_annotation"
     }
   },
@@ -1742,7 +1742,7 @@
     },
     "annotation": {
       "rationale": "资源紧张且任务接近时限，需要优先保障快速恢复。",
-      "review_status": "pending_final_review",
+      "review_status": "approved",
       "label_source": "project_self_built_reference_annotation"
     }
   },
@@ -1807,7 +1807,7 @@
     },
     "annotation": {
       "rationale": "影响范围有限，最小化改派即可恢复。",
-      "review_status": "pending_final_review",
+      "review_status": "approved",
       "label_source": "project_self_built_reference_annotation"
     }
   },
@@ -1872,7 +1872,7 @@
     },
     "annotation": {
       "rationale": "重点医疗场所高优任务受车辆故障影响且时效窗口很短，存在敏感区域服务中断风险。",
-      "review_status": "pending_final_review",
+      "review_status": "approved",
       "label_source": "project_self_built_reference_annotation"
     }
   },
@@ -1934,7 +1934,7 @@
     },
     "annotation": {
       "rationale": "没有直接任务中断，短期无需重排现有路线。",
-      "review_status": "pending_final_review",
+      "review_status": "approved",
       "label_source": "project_self_built_reference_annotation"
     }
   },
@@ -1999,7 +1999,7 @@
     },
     "annotation": {
       "rationale": "需要重调度但不存在高风险语境，应稳妥转移任务并减少改派。",
-      "review_status": "pending_final_review",
+      "review_status": "approved",
       "label_source": "project_self_built_reference_annotation"
     }
   },
@@ -2064,7 +2064,7 @@
     },
     "annotation": {
       "rationale": "封路影响有限且有充分替代路线，宜最小化改派与路线扰动。",
-      "review_status": "pending_final_review",
+      "review_status": "approved",
       "label_source": "project_self_built_reference_annotation"
     }
   },
@@ -2129,7 +2129,7 @@
     },
     "annotation": {
       "rationale": "高人流活动与主干道阻断叠加，多条路线受阻并出现积压，需要尽快恢复散场区域清运服务连续性。",
-      "review_status": "pending_final_review",
+      "review_status": "approved",
       "label_source": "project_self_built_reference_annotation"
     }
   },
@@ -2191,7 +2191,7 @@
     },
     "annotation": {
       "rationale": "事件对当前计划无直接影响，不需要主动制造重调度扰动。",
-      "review_status": "pending_final_review",
+      "review_status": "approved",
       "label_source": "project_self_built_reference_annotation"
     }
   },
@@ -2256,7 +2256,7 @@
     },
     "annotation": {
       "rationale": "多条执行路线同时受阻，运营影响明显，应快速重新安排服务。",
-      "review_status": "pending_final_review",
+      "review_status": "approved",
       "label_source": "project_self_built_reference_annotation"
     }
   },
@@ -2321,7 +2321,7 @@
     },
     "annotation": {
       "rationale": "可预期、短时且替代路径明确，适合减少改派的最小重调度。",
-      "review_status": "pending_final_review",
+      "review_status": "approved",
       "label_source": "project_self_built_reference_annotation"
     }
   },
@@ -2386,7 +2386,7 @@
     },
     "annotation": {
       "rationale": "医院周边关键通道受阻且涉及高优任务，安全管制可能持续，存在高风险服务连续性压力。",
-      "review_status": "pending_final_review",
+      "review_status": "approved",
       "label_source": "project_self_built_reference_annotation"
     }
   },
@@ -2451,7 +2451,7 @@
     },
     "annotation": {
       "rationale": "有明确绕行能力且无敏感人群压力，优先减少调度扰动即可。",
-      "review_status": "pending_final_review",
+      "review_status": "approved",
       "label_source": "project_self_built_reference_annotation"
     }
   },
@@ -2516,7 +2516,7 @@
     },
     "annotation": {
       "rationale": "放学高峰叠加道路阻断和车辆混行风险，需要在保障通行秩序的前提下及时恢复清运任务。",
-      "review_status": "pending_final_review",
+      "review_status": "approved",
       "label_source": "project_self_built_reference_annotation"
     }
   },
@@ -2578,7 +2578,7 @@
     },
     "annotation": {
       "rationale": "对当前系统运行几乎无影响，保持常规策略即可。",
-      "review_status": "pending_final_review",
+      "review_status": "approved",
       "label_source": "project_self_built_reference_annotation"
     }
   },
@@ -2643,7 +2643,7 @@
     },
     "annotation": {
       "rationale": "需要明确重调度，但无更高风险因素，适合以恢复服务并减少改派为主。",
-      "review_status": "pending_final_review",
+      "review_status": "approved",
       "label_source": "project_self_built_reference_annotation"
     }
   }

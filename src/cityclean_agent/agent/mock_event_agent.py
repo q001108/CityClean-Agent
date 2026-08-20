@@ -52,9 +52,9 @@ class FixedBalancedAgent(MockEventAgent):
 
 def _reasoning_summary(event_type: CityEventType) -> str:
     summaries = {
-        CityEventType.WASTE_OVERFLOW: "Prioritize waste-overflow control.",
-        CityEventType.URGENT_TASK: "Prioritize the urgent sanitation request.",
-        CityEventType.VEHICLE_BREAKDOWN: "Minimize disruption after vehicle failure.",
-        CityEventType.ROAD_CLOSURE: "Minimize route disruption after road closure.",
+        CityEventType.WASTE_OVERFLOW: "优先控制垃圾满溢并恢复环境卫生。",
+        CityEventType.URGENT_TASK: "优先响应紧急清运需求。",
+        CityEventType.VEHICLE_BREAKDOWN: "车辆故障后优先减少既有调度扰动。",
+        CityEventType.ROAD_CLOSURE: "道路封闭后优先减少路线执行扰动。",
     }
     return summaries[event_type]

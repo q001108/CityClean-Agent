@@ -39,7 +39,9 @@ def test_demo_runs_closed_loop_with_breakdown_and_final_metrics() -> None:
     assert result.final_metrics.average_response_time == 20.0
     assert result.final_metrics.overflow_count == 0
     assert result.final_metrics.total_distance == 22.0
-    assert "=== Final Metrics ===" in output.getvalue()
+    rendered = output.getvalue()
+    assert "治理响应时限（response_deadline）：无" in rendered
+    assert "=== 最终指标 ===" in rendered
 
 
 def test_demo_does_not_require_network_access(monkeypatch) -> None:
@@ -95,9 +97,10 @@ def test_module_entry_runs_to_completion() -> None:
         check=False,
         capture_output=True,
         text=True,
+        encoding="utf-8",
     )
 
     assert completed.returncode == 0, completed.stderr
-    assert "=== Initial Dispatch ===" in completed.stdout
-    assert "VEHICLE_BREAKDOWN: V01" in completed.stdout
-    assert "=== Final Metrics ===" in completed.stdout
+    assert "=== 初始调度 ===" in completed.stdout
+    assert "车辆故障（VEHICLE_BREAKDOWN）" in completed.stdout
+    assert "=== 最终指标 ===" in completed.stdout

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 import os
 import sys
 
@@ -15,6 +14,12 @@ from cityclean_agent.agent.deepseek_event_agent import (
 from cityclean_agent.domain.enums import CityEventType, VehicleStatus
 from cityclean_agent.domain.models import CityEvent, CityState, Road, Vehicle, WastePoint
 from cityclean_agent.domain.road_network import RoadNetwork
+from cityclean_agent.presentation import (
+    EVENT_TYPE_LABELS,
+    POLICY_PROFILE_LABELS,
+    labeled,
+    risk_label,
+)
 
 
 def main() -> int:
@@ -22,20 +27,22 @@ def main() -> int:
 
     load_dotenv()
     if not os.getenv("DEEPSEEK_API_KEY"):
-        print("DEEPSEEK_API_KEY is not configured.", file=sys.stderr)
+        print("DEEPSEEK_API_KEY 未配置。", file=sys.stderr)
         return 1
 
     agent = DeepSeekEventAgent()
     state = _state()
     for event in _events():
         decision = agent.decide(event, state)
+        print(f"事件：{labeled(event.event_type, EVENT_TYPE_LABELS)}")
+        print(f"风险等级：{risk_label(decision.risk_level)}")
+        print(f"治理策略：{labeled(decision.policy_profile, POLICY_PROFILE_LABELS)}")
         print(
-            json.dumps(
-                decision.model_dump(mode="json"),
-                ensure_ascii=False,
-                sort_keys=True,
-            )
+            "治理响应时限（response_deadline）："
+            f"{decision.response_deadline if decision.response_deadline is not None else '无'}"
         )
+        print(f"优先目标：{', '.join(decision.priority_targets) or '无'}")
+        print(f"治理理由：{decision.reasoning_summary}")
     return 0
 
 
@@ -59,19 +66,19 @@ def _events() -> tuple[CityEvent, ...]:
     return (
         CityEvent(
             "E-overflow", CityEventType.WASTE_OVERFLOW, 10, "B", ["W1"], 4, 30,
-            description="Waste overflow",
+            description="居民区垃圾点发生垃圾满溢。",
         ),
         CityEvent(
             "E-urgent", CityEventType.URGENT_TASK, 10, "B", ["W1"], 10, 30,
-            description="Urgent cleanup",
+            description="居民区需要紧急清运。",
         ),
         CityEvent(
             "E-breakdown", CityEventType.VEHICLE_BREAKDOWN, 10, "C", ["V2"], 4, None,
-            description="Vehicle breakdown",
+            description="执行中的清运车辆发生故障。",
         ),
         CityEvent(
             "E-closure", CityEventType.ROAD_CLOSURE, 10, "A-B", ["AB"], 3, None,
-            description="Road closure",
+            description="道路因突发情况封闭。",
         ),
     )
 

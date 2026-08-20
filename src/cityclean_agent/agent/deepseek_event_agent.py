@@ -28,31 +28,27 @@ _FORBIDDEN_OPTIMIZATION_FIELDS = frozenset(
     }
 )
 
-_SYSTEM_PROMPT = """You are the CityClean governance event assessor.
-Return only the requested JSON structured PolicyDecision. Assess governance urgency,
-risk level, valid priority targets, a response deadline, an existing policy profile,
-a short reasoning summary, and a small number of governance constraints.
+_SYSTEM_PROMPT = """你是 CityClean 的城市环卫事件治理研判助手。
+请严格只输出符合以下 JSON 结构的 PolicyDecision，用于判断治理紧迫性、
+风险等级、有效优先目标、治理响应时限、既有治理策略、简短中文治理理由和少量治理约束。
 
-Your JSON must contain exactly these fields and no others:
-- event_type: the input event_type string unchanged.
-- risk_level: an integer from 1 through 5, not a word such as HIGH.
-- reasoning_summary: a short non-empty string.
-- response_deadline: an absolute simulation-minute integer at or after current_time, or null.
-- priority_targets: an array containing only existing WastePoint IDs.
-- policy_profile: BALANCED, URGENT_RESPONSE, OVERFLOW_CONTROL, or MINIMAL_RESCHEDULE.
-- constraints: an array of short governance strings.
-Do not rename these fields or add fields such as governance_urgency or valid_priority_targets.
+JSON 必须且只能包含以下英文机器字段，不能新增或改名：
+- event_type：必须原样使用输入的 event_type。
+- risk_level：1 到 5 的整数，不能使用 HIGH 等文字。
+- reasoning_summary：简短、非空的中文治理理由。
+- response_deadline：绝对模拟分钟，必须不早于 current_time；未知时为 null。
+- priority_targets：数组，元素必须是当前有效 WastePoint ID。
+- policy_profile：只能是 BALANCED、URGENT_RESPONSE、OVERFLOW_CONTROL 或 MINIMAL_RESCHEDULE。
+- constraints：包含少量简短中文治理约束的数组。
+不得输出 governance_urgency、valid_priority_targets 等额外字段。
 
-The structured event_type, timestamp, location, and affected_entities are system facts.
-When natural_language_description is present, use it only as additional governance
-context together with severity and the city summary. It must not override those facts
-or be used to invent a different event type or target.
+event_type、timestamp、location 和 affected_entities 是系统确定性事实。
+若存在 natural_language_description，只能将其与 severity 和城市摘要结合为额外治理语境；
+不得覆盖这些事实，也不得虚构新的事件类型或目标。
 
-You must not assign vehicles, generate routes, calculate shortest paths, capacity,
-ETA, task sequences, distances, OR-Tools objectives, or optimization weights.
-Deterministic routing and dispatch are performed by a separate optimizer.
-Only use these policy profiles: BALANCED, URGENT_RESPONSE, OVERFLOW_CONTROL,
-MINIMAL_RESCHEDULE."""
+不得进行车辆分配、路线生成、最短路径计算、容量计算、ETA 计算、任务序列生成、
+距离计算、OR-Tools 目标计算或优化权重生成。
+确定性路径与调度由独立 Optimizer 负责。"""
 
 
 class DeepSeekEventAgentError(RuntimeError):
@@ -84,7 +80,7 @@ class DeepSeekEventAgent:
             output = self._model.invoke(messages)
         except Exception as exc:
             raise DeepSeekEventAgentError(
-                f"DeepSeek model invocation failed: {exc}"
+                f"DeepSeek 模型调用失败：{exc}"
             ) from exc
 
         decision = _validate_structured_output(output)
@@ -95,7 +91,7 @@ class DeepSeekEventAgent:
         load_dotenv()
         api_key = os.getenv("DEEPSEEK_API_KEY")
         if not api_key:
-            raise DeepSeekEventAgentError("DEEPSEEK_API_KEY is not configured")
+            raise DeepSeekEventAgentError("DEEPSEEK_API_KEY 未配置")
         try:
             chat_model = ChatDeepSeek(
                 model=DEFAULT_DEEPSEEK_MODEL,
@@ -109,7 +105,7 @@ class DeepSeekEventAgent:
             )
         except Exception as exc:
             raise DeepSeekEventAgentError(
-                f"DeepSeek structured-output model configuration failed: {exc}"
+                f"DeepSeek 结构化输出模型配置失败：{exc}"
             ) from exc
 
 
@@ -195,35 +191,35 @@ def _validate_structured_output(output: Any) -> PolicyDecision:
     if isinstance(output, PolicyDecision):
         return output
     if not isinstance(output, Mapping):
-        raise DeepSeekEventAgentError("DeepSeek returned no structured PolicyDecision")
+        raise DeepSeekEventAgentError("DeepSeek 未返回结构化 PolicyDecision")
     forbidden_fields = _FORBIDDEN_OPTIMIZATION_FIELDS.intersection(output)
     if forbidden_fields:
         raise DeepSeekEventAgentError(
-            "DeepSeek output must not contain optimizer weight fields"
+            "DeepSeek 输出不得包含 Optimizer 权重字段"
         )
     try:
         return PolicyDecision.model_validate(dict(output))
     except ValidationError as exc:
-        raise DeepSeekEventAgentError("DeepSeek returned an invalid PolicyDecision") from exc
+        raise DeepSeekEventAgentError("DeepSeek 返回了无效的 PolicyDecision") from exc
 
 
 def _validate_cross_object_contract(
     decision: PolicyDecision, event: CityEvent, state: CityState
 ) -> None:
     if decision.event_type is not event.event_type:
-        raise DeepSeekEventAgentError("PolicyDecision event_type does not match CityEvent")
+        raise DeepSeekEventAgentError("PolicyDecision 的 event_type 与 CityEvent 不一致")
     invalid_targets = set(decision.priority_targets).difference(state.waste_points)
     if invalid_targets:
-        raise DeepSeekEventAgentError("PolicyDecision contains an unknown priority target")
+        raise DeepSeekEventAgentError("PolicyDecision 包含未知的 priority target")
     if not isinstance(decision.policy_profile, PolicyProfile):
-        raise DeepSeekEventAgentError("PolicyDecision contains an invalid policy profile")
+        raise DeepSeekEventAgentError("PolicyDecision 包含无效的 policy_profile")
     if (
         not decision.reasoning_summary.strip()
         or len(decision.reasoning_summary) > _MAX_REASONING_SUMMARY_LENGTH
     ):
-        raise DeepSeekEventAgentError("PolicyDecision reasoning_summary is invalid")
+        raise DeepSeekEventAgentError("PolicyDecision 的 reasoning_summary 无效")
     if (
         decision.response_deadline is not None
         and decision.response_deadline < state.current_time
     ):
-        raise DeepSeekEventAgentError("PolicyDecision response_deadline is in the past")
+        raise DeepSeekEventAgentError("PolicyDecision 的 response_deadline 早于当前模拟时间")

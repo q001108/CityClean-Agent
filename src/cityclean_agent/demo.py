@@ -23,6 +23,14 @@ from cityclean_agent.optimizer.ortools_optimizer import ORToolsOptimizer
 from cityclean_agent.optimizer.results import OptimizationResult, OptimizationStatus
 from cityclean_agent.policy.mapper import POLICY_PARAMETERS_BY_PROFILE
 from cityclean_agent.policy.models import PolicyProfile
+from cityclean_agent.presentation import (
+    EVENT_TYPE_LABELS,
+    METRIC_LABELS,
+    POLICY_PROFILE_LABELS,
+    STATUS_LABELS,
+    labeled,
+    risk_label,
+)
 from cityclean_agent.simulator.city_sim import CitySim
 from cityclean_agent.verifier.plan_verifier import PlanVerifier, VerificationResult
 from cityclean_agent.workflow import WorkflowResult, WorkflowStatus, process_event
@@ -53,17 +61,20 @@ def run_demo(output: TextIO | None = None) -> DemoResult:
     assert initial_result.plan is not None
     _write_initial_dispatch(output, initial_result.plan, initial_verification)
 
-    output.write("\n=== Simulation ===\n")
+    output.write("\n=== 仿真执行 ===\n")
     _advance_and_report(sim, output, tick_count=2)
     pre_incident_state = sim.get_state()
     completed_before_incident = _completed_task_ids(pre_incident_state)
     released_task_ids = tuple(pre_incident_state.vehicles["V01"].assigned_tasks)
     if not completed_before_incident or not released_task_ids:
-        raise RuntimeError("demo scenario did not reach the required pre-incident state")
+        raise RuntimeError("演示场景未达到预期的事件前状态")
 
-    output.write("\n=== Incident ===\n")
-    output.write(f"VEHICLE_BREAKDOWN: V01 at t={pre_incident_state.current_time}\n")
-    output.write(f"Unstarted tasks released for replanning: {', '.join(released_task_ids)}\n")
+    output.write("\n=== 突发事件 ===\n")
+    output.write(
+        f"{labeled(CityEventType.VEHICLE_BREAKDOWN, EVENT_TYPE_LABELS)}："
+        f"V01，模拟分钟={pre_incident_state.current_time}\n"
+    )
+    output.write(f"为重规划释放的未开始任务：{', '.join(released_task_ids)}\n")
     incident = CityEvent(
         event_id="demo-breakdown-v01",
         event_type=CityEventType.VEHICLE_BREAKDOWN,
@@ -76,14 +87,14 @@ def run_demo(output: TextIO | None = None) -> DemoResult:
     )
     replanning_result = process_event(sim, incident)
     if replanning_result.status is not WorkflowStatus.SUCCESS:
-        raise RuntimeError(f"demo replanning failed: {replanning_result.reason}")
+        raise RuntimeError(f"演示重规划失败：{replanning_result.reason}")
     if replanning_result.plan is None or replanning_result.policy_decision is None:
-        raise RuntimeError("successful demo replanning did not return its plan and policy")
+        raise RuntimeError("成功的演示重规划未返回计划和治理策略")
 
     _write_policy(output, replanning_result)
     _write_replanning(output, replanning_result, sim.get_state())
 
-    output.write("\n=== Continued Simulation ===\n")
+    output.write("\n=== 继续仿真 ===\n")
     _advance_and_report(sim, output, tick_count=4)
     final_state = sim.get_state()
     final_metrics = MetricsCalculator().calculate(final_state, sim.get_runtime_stats())
@@ -144,10 +155,10 @@ def _install_initial_plan(
         sim.get_state(), POLICY_PARAMETERS_BY_PROFILE[PolicyProfile.BALANCED]
     )
     if result.status is not OptimizationStatus.FEASIBLE or result.plan is None:
-        raise RuntimeError(f"demo initial dispatch is infeasible: {result.reason}")
+        raise RuntimeError(f"演示初始调度不可行：{result.reason}")
     verification = PlanVerifier().verify(sim.get_state(), result.plan)
     if not verification.valid:
-        raise RuntimeError("demo initial dispatch failed verification")
+        raise RuntimeError("演示初始调度未通过独立验证")
     sim.install_plan(result.plan)
     return result, verification
 
@@ -164,54 +175,63 @@ def _advance_and_report(sim: CitySim, output: TextIO, tick_count: int) -> None:
         ]
         for task_id in newly_completed:
             task = state.tasks[task_id]
-            output.write(f"Completed: {task_id} at t={task.completed_at}\n")
+            output.write(f"任务完成：{task_id}，模拟分钟={task.completed_at}\n")
 
 
 def _write_initial_state(output: TextIO, state: CityState) -> None:
-    output.write("=== Initial City State ===\n")
-    output.write(f"current_time: {state.current_time}\n")
-    output.write("vehicles:\n")
+    output.write("=== 初始城市状态 ===\n")
+    output.write(f"当前模拟时间：{state.current_time}\n")
+    output.write("车辆：\n")
     for vehicle in sorted(state.vehicles.values(), key=lambda item: item.id):
         output.write(
-            f"  {vehicle.id}: node={vehicle.current_node_id}, load={vehicle.current_load}, "
-            f"status={vehicle.status.value}\n"
+            f"  {vehicle.id}：节点={vehicle.current_node_id}，载荷={vehicle.current_load}，"
+            f"状态={labeled(vehicle.status, STATUS_LABELS)}\n"
         )
-    output.write("waste points:\n")
+    output.write("垃圾点：\n")
     for point in sorted(state.waste_points.values(), key=lambda item: item.id):
-        output.write(f"  {point.id}: load={point.current_load}/{point.capacity}\n")
-    output.write("tasks:\n")
+        output.write(f"  {point.id}：载荷={point.current_load}/{point.capacity}\n")
+    output.write("任务：\n")
     for task in sorted(state.tasks.values(), key=lambda item: item.task_id):
-        output.write(f"  {task.task_id}: target={task.target_id}, status={task.status.value}\n")
+        output.write(
+            f"  {task.task_id}：目标={task.target_id}，"
+            f"状态={labeled(task.status, STATUS_LABELS)}\n"
+        )
 
 
 def _write_initial_dispatch(
     output: TextIO, plan: DispatchPlan, verification: VerificationResult
 ) -> None:
-    output.write("\n=== Initial Dispatch ===\n")
+    output.write("\n=== 初始调度 ===\n")
     _write_plan(output, plan)
-    output.write(f"Verifier: {'PASS' if verification.valid else 'FAIL'}\n")
+    output.write(f"独立验证：{'通过' if verification.valid else '失败'}\n")
 
 
 def _write_policy(output: TextIO, result: WorkflowResult) -> None:
     decision = result.policy_decision
     assert decision is not None
-    output.write("\n=== Policy ===\n")
-    output.write(f"risk_level: {decision.risk_level}\n")
-    output.write(f"policy_profile: {decision.policy_profile.value}\n")
-    output.write(f"priority_targets: {', '.join(decision.priority_targets) or 'none'}\n")
-    output.write(f"reasoning: {decision.reasoning_summary}\n")
+    output.write("\n=== 治理策略 ===\n")
+    output.write(f"风险等级：{risk_label(decision.risk_level)}\n")
+    output.write(f"治理策略：{labeled(decision.policy_profile, POLICY_PROFILE_LABELS)}\n")
+    output.write(
+        "治理响应时限（response_deadline）："
+        f"{decision.response_deadline if decision.response_deadline is not None else '无'}\n"
+    )
+    output.write(f"优先目标：{', '.join(decision.priority_targets) or '无'}\n")
+    output.write(f"治理理由：{decision.reasoning_summary}\n")
 
 
 def _write_replanning(
     output: TextIO, result: WorkflowResult, state: CityState
 ) -> None:
-    output.write("\n=== Replanning ===\n")
-    output.write(f"V01 status: {state.vehicles['V01'].status.value}\n")
+    output.write("\n=== 重规划 ===\n")
+    output.write(f"V01 状态：{labeled(state.vehicles['V01'].status, STATUS_LABELS)}\n")
     assert result.plan is not None
     _write_plan(output, result.plan)
-    output.write(f"unassigned tasks: {', '.join(result.plan.unassigned_tasks) or 'none'}\n")
+    output.write(f"未分配任务：{', '.join(result.plan.unassigned_tasks) or '无'}\n")
     verification = result.verification_result
-    output.write(f"Verifier: {'PASS' if verification is not None and verification.valid else 'FAIL'}\n")
+    output.write(
+        f"独立验证：{'通过' if verification is not None and verification.valid else '失败'}\n"
+    )
 
 
 def _write_plan(output: TextIO, plan: DispatchPlan) -> None:
@@ -222,17 +242,17 @@ def _write_plan(output: TextIO, plan: DispatchPlan) -> None:
             for task_id, arrival in route.planned_arrivals.items()
         )
         output.write(
-            f"  {route.vehicle_id}: tasks=[{tasks}], planned_arrivals=[{arrivals}]\n"
+            f"  {route.vehicle_id}：任务序列=[{tasks}]，计划到达时刻=[{arrivals}]\n"
         )
 
 
 def _write_final_metrics(output: TextIO, metrics: Metrics) -> None:
-    output.write("\n=== Final Metrics ===\n")
-    output.write(f"task_completion_rate: {metrics.task_completion_rate:.2f}\n")
-    output.write(f"urgent_task_completion_rate: {metrics.urgent_task_completion_rate:.2f}\n")
-    output.write(f"average_response_time: {metrics.average_response_time:.2f}\n")
-    output.write(f"overflow_count: {metrics.overflow_count}\n")
-    output.write(f"total_distance: {metrics.total_distance:.2f}\n")
+    output.write("\n=== 最终指标 ===\n")
+    output.write(f"{METRIC_LABELS['task_completion_rate']}（task_completion_rate）：{metrics.task_completion_rate:.2f}\n")
+    output.write(f"{METRIC_LABELS['urgent_task_completion_rate']}（urgent_task_completion_rate）：{metrics.urgent_task_completion_rate:.2f}\n")
+    output.write(f"{METRIC_LABELS['average_response_time']}（average_response_time）：{metrics.average_response_time:.2f}\n")
+    output.write(f"{METRIC_LABELS['overflow_count']}（overflow_count）：{metrics.overflow_count}\n")
+    output.write(f"{METRIC_LABELS['total_distance']}（total_distance）：{metrics.total_distance:.2f}\n")
 
 
 def _completed_task_ids(state: CityState) -> tuple[str, ...]:

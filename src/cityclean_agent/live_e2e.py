@@ -100,9 +100,8 @@ def live_e2e_cases() -> tuple[LiveE2ECase, ...]:
                 10,
                 40,
                 description=(
-                    "A large event has just ended. Dense crowds at the exit require "
-                    "the temporary waste collection task to finish quickly to protect "
-                    "evacuation flow and environmental hygiene."
+                    "大型活动刚结束，出口处人流密集，需要尽快完成临时清运任务，"
+                    "以保障疏散通行和环境卫生。"
                 ),
             ),
             target_task_id="task-E-live-urgent-WU",
@@ -120,8 +119,8 @@ def live_e2e_cases() -> tuple[LiveE2ECase, ...]:
                 3,
                 None,
                 description=(
-                    "At school dismissal peak, the waste point near the gate has overflowed. "
-                    "Parents continue to report odor, so the hygiene impact needs priority control."
+                    "学校放学高峰时，校门附近垃圾点已经满溢。家长持续反映异味，"
+                    "应优先控制卫生影响。"
                 ),
             ),
             target_task_id="task-E-live-overflow-WO",
@@ -139,8 +138,8 @@ def live_e2e_cases() -> tuple[LiveE2ECase, ...]:
                 3,
                 None,
                 description=(
-                    "A main road has suddenly closed during event dispersal. Multiple existing "
-                    "collection routes are blocked and nearby tasks are continuing to accumulate."
+                    "活动散场期间一条主干道突然封闭，多个既有清运路线受阻，"
+                    "附近任务仍在持续累积。"
                 ),
             ),
             target_task_id="T03",

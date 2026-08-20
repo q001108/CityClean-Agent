@@ -14,6 +14,12 @@ from cityclean_agent.benchmark.natural_language_evaluation import (
     run_natural_language_evaluation,
     write_natural_language_evaluation_results,
 )
+from cityclean_agent.presentation import (
+    EVENT_TYPE_LABELS,
+    POLICY_PROFILE_LABELS,
+    labeled,
+    risk_label,
+)
 
 
 def main() -> int:
@@ -21,7 +27,7 @@ def main() -> int:
 
     load_dotenv()
     if not os.getenv("DEEPSEEK_API_KEY"):
-        print("DEEPSEEK_API_KEY is not configured.", file=sys.stderr)
+        print("DEEPSEEK_API_KEY 未配置。", file=sys.stderr)
         return 1
 
     results = run_natural_language_evaluation(DeepSeekEventAgent())
@@ -29,14 +35,16 @@ def main() -> int:
     write_natural_language_evaluation_results(
         Path("deepseek_nl_eval_results.json"), results
     )
-    print(f"Cases: {summary['total_cases']}")
-    print(f"Success: {summary['successful_cases']}")
-    print(f"Contract success: {summary['contract_success_rate']:.2%}")
+    print(f"评测样例数：{summary['total_cases']}")
+    print(f"通过样例数：{summary['successful_cases']}")
+    print(f"合同通过率：{summary['contract_success_rate']:.2%}")
     for result in results:
         print(
-            f"{result.case_id}: {result.event_type} | "
-            f"profile={result.policy_profile} | risk={result.risk_level} | "
-            f"deadline={result.response_deadline}"
+            f"{result.case_id}：{labeled(result.event_type, EVENT_TYPE_LABELS)} | "
+            f"治理策略={labeled(result.policy_profile, POLICY_PROFILE_LABELS) if result.policy_profile else '无'} | "
+            f"风险等级={risk_label(result.risk_level) if result.risk_level is not None else '无'} | "
+            "治理响应时限="
+            f"{result.response_deadline if result.response_deadline is not None else '无'}"
         )
     return 0
 
