@@ -12,6 +12,7 @@ dependencies = [
     "ortools>=9.10,<10",
     "pydantic>=2,<3",
     "python-dotenv>=1,<2",
+    "streamlit>=1.40,<2",
 ]
 
 [project.optional-dependencies]

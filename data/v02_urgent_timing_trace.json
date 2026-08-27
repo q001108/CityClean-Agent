@@ -1,0 +1,49 @@
+{
+  "schema_version": "2.0-trace",
+  "provenance": {
+    "trace_id": "recorded-urgent_timing_tradeoff_live-20260826T043547Z",
+    "trace_source": "RECORDED_REAL_API",
+    "model_id": "deepseek-v4-flash",
+    "captured_at": "2026-08-26T04:35:47.679644+00:00",
+    "scenario_id": "urgent_timing_tradeoff_live",
+    "dataset_version": "v0.2",
+    "seed": 0,
+    "complaint_contract_version": "2.0",
+    "policy_contract_version": "1.0",
+    "frontend_contract_version": "2.0",
+    "input_hash": "d8fa164123d235f763d9f4d850c9cac465d99a874d2cddb8f797c6773d8e48f2",
+    "success": true,
+    "error_type": null
+  },
+  "complaint": {
+    "content": "大型活动刚结束，出口处人流密集，需要尽快完成临时清运任务，以保障疏散通行和环境卫生。",
+    "source": "USER_AUTHORED"
+  },
+  "city_event": {
+    "event_id": "E-live-urgent",
+    "event_type": "URGENT_TASK",
+    "timestamp": 10,
+    "location": "C",
+    "affected_entities": [
+      "WU"
+    ],
+    "severity": 10,
+    "deadline": 40,
+    "description": "大型活动刚结束，出口处人流密集，需要尽快完成临时清运任务，以保障疏散通行和环境卫生。"
+  },
+  "policy_decision": {
+    "event_type": "URGENT_TASK",
+    "risk_level": 5,
+    "reasoning_summary": "大型活动刚结束，出口人流密集，WU虽未满溢但属紧急临时清运需求，需立即响应保障疏散和环境卫生。",
+    "response_deadline": 20,
+    "priority_targets": [
+      "WU"
+    ],
+    "policy_profile": "URGENT_RESPONSE",
+    "constraints": [
+      "优先调度可用车辆",
+      "确保通行安全",
+      "尽快完成清运"
+    ]
+  }
+}

@@ -1,0 +1,266 @@
+{
+  "ablation_comparison": [
+    {
+      "availability": "READY",
+      "completed": true,
+      "label": "Full LLM 策略重规划",
+      "metrics": {
+        "average_response_time": 11.666666666666666,
+        "overflow_count": 0,
+        "task_completion_rate": 1.0,
+        "total_distance": 51.0,
+        "urgent_task_completion_rate": 1.0
+      },
+      "mode": "FULL_LLM_POLICY_REPLAN",
+      "optimizer_status": "SUCCESS",
+      "policy_decision": {
+        "constraints": [
+          "优先调度可用车辆",
+          "确保通行安全",
+          "尽快完成清运"
+        ],
+        "event_type": "URGENT_TASK",
+        "policy_profile": "URGENT_RESPONSE",
+        "priority_targets": [
+          "WU"
+        ],
+        "reasoning_summary": "大型活动刚结束，出口人流密集，WU虽未满溢但属紧急临时清运需求，需立即响应保障疏散和环境卫生。",
+        "response_deadline": 20,
+        "risk_level": 5
+      },
+      "reason": null,
+      "shared_inputs": {
+        "event_id": "E-live-urgent",
+        "event_targets": [
+          "WU"
+        ],
+        "event_time": 10,
+        "event_type": "URGENT_TASK",
+        "initial_state_id": "urgent_timing_tradeoff@seed-0",
+        "max_simulation_time": 60,
+        "metrics": "cityclean_agent.metrics.calculator.MetricsCalculator",
+        "seed": 0,
+        "task_builder": "cityclean_agent.domain.task_builder.build_task_changes",
+        "tick_minutes": 5
+      },
+      "verifier_passed": true
+    },
+    {
+      "availability": "READY",
+      "completed": true,
+      "label": "固定 BALANCED 重规划",
+      "metrics": {
+        "average_response_time": 13.333333333333334,
+        "overflow_count": 0,
+        "task_completion_rate": 1.0,
+        "total_distance": 2.0,
+        "urgent_task_completion_rate": 1.0
+      },
+      "mode": "FIXED_BALANCED_REPLAN",
+      "optimizer_status": "SUCCESS",
+      "policy_decision": {
+        "constraints": [],
+        "event_type": "URGENT_TASK",
+        "policy_profile": "BALANCED",
+        "priority_targets": [
+          "WU"
+        ],
+        "reasoning_summary": "优先响应紧急清运需求。",
+        "response_deadline": 40,
+        "risk_level": 5
+      },
+      "reason": null,
+      "shared_inputs": {
+        "event_id": "E-live-urgent",
+        "event_targets": [
+          "WU"
+        ],
+        "event_time": 10,
+        "event_type": "URGENT_TASK",
+        "initial_state_id": "urgent_timing_tradeoff@seed-0",
+        "max_simulation_time": 60,
+        "metrics": "cityclean_agent.metrics.calculator.MetricsCalculator",
+        "seed": 0,
+        "task_builder": "cityclean_agent.domain.task_builder.build_task_changes",
+        "tick_minutes": 5
+      },
+      "verifier_passed": true
+    },
+    {
+      "availability": "READY",
+      "completed": false,
+      "label": "静态不重规划",
+      "metrics": {
+        "average_response_time": 12.5,
+        "overflow_count": 0,
+        "task_completion_rate": 0.6666666666666666,
+        "total_distance": 1.0,
+        "urgent_task_completion_rate": 0.0
+      },
+      "mode": "STATIC_NO_REPLAN",
+      "optimizer_status": "STATIC_APPLIED",
+      "policy_decision": null,
+      "reason": null,
+      "shared_inputs": {
+        "event_id": "E-live-urgent",
+        "event_targets": [
+          "WU"
+        ],
+        "event_time": 10,
+        "event_type": "URGENT_TASK",
+        "initial_state_id": "urgent_timing_tradeoff@seed-0",
+        "max_simulation_time": 60,
+        "metrics": "cityclean_agent.metrics.calculator.MetricsCalculator",
+        "seed": 0,
+        "task_builder": "cityclean_agent.domain.task_builder.build_task_changes",
+        "tick_minutes": 5
+      },
+      "verifier_passed": null
+    }
+  ],
+  "city_event": {
+    "affected_entities": [
+      "WU"
+    ],
+    "deadline": 40,
+    "description": "大型活动刚结束，出口处人流密集，需要尽快完成临时清运任务，以保障疏散通行和环境卫生。",
+    "event_id": "E-live-urgent",
+    "event_type": "URGENT_TASK",
+    "location": "C",
+    "severity": 10,
+    "timestamp": 10
+  },
+  "complaint_session": {
+    "clarification_prompt": null,
+    "intake_result": {
+      "affected_entity_mentions": [
+        "WU"
+      ],
+      "candidate_event_type": "URGENT_TASK",
+      "complaint_summary": "活动出口人流密集，需要紧急完成临时清运。",
+      "location_text": "活动出口",
+      "missing_fields": [],
+      "rejection_reason": null,
+      "status": "READY"
+    },
+    "messages": [
+      {
+        "content": "大型活动刚结束，出口处人流密集，需要尽快完成临时清运任务，以保障疏散通行和环境卫生。",
+        "created_at": 0,
+        "message_id": "complaint-urgent-001",
+        "role": "USER",
+        "source": "USER_AUTHORED"
+      }
+    ],
+    "scenario_id": "urgent_timing_tradeoff_live",
+    "session_id": "session-urgent_timing_tradeoff_live"
+  },
+  "execution_frames": [
+    {
+      "module": "投诉接入",
+      "status": "SUCCESS"
+    },
+    {
+      "module": "CityEvent",
+      "status": "SUCCESS"
+    },
+    {
+      "module": "DeepSeek 研判",
+      "status": "SUCCESS"
+    },
+    {
+      "module": "TaskBuilder",
+      "status": "SUCCESS"
+    },
+    {
+      "module": "OR-Tools",
+      "status": "SUCCESS"
+    },
+    {
+      "module": "Verifier",
+      "status": "SUCCESS"
+    },
+    {
+      "module": "CitySim",
+      "status": "SUCCESS"
+    },
+    {
+      "module": "最终总结",
+      "status": "SUCCESS"
+    }
+  ],
+  "experience": {
+    "availability": "READY",
+    "experience_id": "recorded-urgent_timing_tradeoff_live-20260826T043547Z",
+    "mode": "FULL_LLM_POLICY_REPLAN",
+    "scenario_id": "urgent_timing_tradeoff_live",
+    "selected_case": true,
+    "selected_case_disclosure": "精选展示案例；全量冻结评测与不利结果见实验说明。",
+    "title": "投诉闭环：活动出口临时清运"
+  },
+  "experiment_summary": {
+    "contract_success_rate": 0.95,
+    "gold_cases": 40,
+    "macro_f1": 0.5216,
+    "paired_context_accuracy": 0.3125,
+    "policy_accuracy": 0.6053,
+    "provider_failures": 2,
+    "successful_calls": 38
+  },
+  "final_metrics": {
+    "average_response_time": 11.666666666666666,
+    "overflow_count": 0,
+    "task_completion_rate": 1.0,
+    "total_distance": 51.0,
+    "urgent_task_completion_rate": 1.0
+  },
+  "final_summary": {
+    "citizen_reply": "已根据已验证的执行结果反馈：任务已完成。",
+    "dispatch_summary": "OR-Tools 状态：SUCCESS。",
+    "fact_refs": [
+      "complaint",
+      "policy",
+      "optimizer",
+      "verifier",
+      "outcome"
+    ],
+    "governance_summary": "治理策略：URGENT_RESPONSE。",
+    "headline": "确定性结果说明（非模型回复）",
+    "incident_summary": "活动出口人流密集，需要紧急完成临时清运。",
+    "outcome_summary": "任务已完成",
+    "source": "DETERMINISTIC_TEMPLATE",
+    "verification_summary": "Verifier 独立验证通过。"
+  },
+  "policy_decision": {
+    "constraints": [
+      "优先调度可用车辆",
+      "确保通行安全",
+      "尽快完成清运"
+    ],
+    "event_type": "URGENT_TASK",
+    "policy_profile": "URGENT_RESPONSE",
+    "priority_targets": [
+      "WU"
+    ],
+    "reasoning_summary": "大型活动刚结束，出口人流密集，WU虽未满溢但属紧急临时清运需求，需立即响应保障疏散和环境卫生。",
+    "response_deadline": 20,
+    "risk_level": 5
+  },
+  "policy_notice": "已加载真实 DeepSeek 冻结 PolicyDecision；离线回放不再访问 Provider。",
+  "provenance": {
+    "captured_at": "2026-08-26T04:35:47.679644+00:00",
+    "complaint_contract_version": "2.0",
+    "dataset_version": "v0.2",
+    "error_type": null,
+    "frontend_contract_version": "2.0",
+    "input_hash": "d8fa164123d235f763d9f4d850c9cac465d99a874d2cddb8f797c6773d8e48f2",
+    "model_id": "deepseek-v4-flash",
+    "policy_contract_version": "1.0",
+    "scenario_id": "urgent_timing_tradeoff_live",
+    "seed": 0,
+    "success": true,
+    "trace_id": "recorded-urgent_timing_tradeoff_live-20260826T043547Z",
+    "trace_source": "RECORDED_REAL_API"
+  },
+  "schema_version": "2.0"
+}

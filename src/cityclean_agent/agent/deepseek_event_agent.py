@@ -86,7 +86,6 @@ class DeepSeekEventAgent:
         decision = _validate_structured_output(output)
         _validate_cross_object_contract(decision, event, state)
         return decision
-
     def _create_structured_model(self) -> Any:
         load_dotenv()
         api_key = os.getenv("DEEPSEEK_API_KEY")
@@ -107,6 +106,20 @@ class DeepSeekEventAgent:
             raise DeepSeekEventAgentError(
                 f"DeepSeek 结构化输出模型配置失败：{exc}"
             ) from exc
+
+
+def validate_policy_decision(
+    decision: PolicyDecision, event: CityEvent, state: CityState
+) -> PolicyDecision:
+    """Validate a stored policy decision at the same boundary as API output.
+
+    Frozen real trajectories are replayed without contacting a provider, but
+    must still satisfy the current event/state contract before they can drive
+    any deterministic scheduling component.
+    """
+
+    _validate_cross_object_contract(decision, event, state)
+    return decision
 
 
 def build_governance_state_summary(

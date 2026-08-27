@@ -11,5 +11,11 @@ benchmark_results.json
 benchmark_comparison_results.json
 deepseek_nl_eval_results.json
 deepseek_e2e_smoke_results.json
+deepseek_governance_gold_results.json
 deepseek_repeatability_results.json
 verifier_adversarial_results.json
+
+# Local browser QA artifacts and recorded review captures
+.playwright-cli/
+/v2-*.png
+/v2-*.yml
