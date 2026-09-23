@@ -261,11 +261,29 @@ export type SyntheticRunSnapshot = {
     capacity_liters: number;
     fill_ratio: number;
     generation_liters_per_hour: number;
-    task_status: string;
+    task_status: string | null;
   }>;
   routes: SyntheticDispatch["routes"];
   available_road_disruptions: string[];
   available_vehicle_disruptions: string[];
+  available_bin_disruptions: string[];
+  closed_road_ids: string[];
+  timeline: Array<{
+    sequence: number;
+    current_minute: number;
+    kind: "RUN_STARTED" | "TIME_ADVANCED" | "DISRUPTION" | "RUN_COMPLETED";
+    summary: string;
+    completed_task_count: number;
+    route_count: number;
+    replan_status: string;
+    vehicles: Array<{
+      vehicle_id: string;
+      status: string;
+      current_node_id: string;
+      current_load_liters: number;
+      active_task_id: string | null;
+    }>;
+  }>;
 };
 
 export type SyntheticRunStart = {
@@ -392,7 +410,7 @@ export function step_synthetic_run(run_id: string, ticks: number): Promise<Synth
 
 export function disrupt_synthetic_run(
   run_id: string,
-  disruption_type: "ROAD_CLOSURE" | "VEHICLE_BREAKDOWN",
+  disruption_type: "ROAD_CLOSURE" | "VEHICLE_BREAKDOWN" | "WASTE_OVERFLOW" | "URGENT_TASK",
 ): Promise<SyntheticRunSnapshot> {
   return request_json(`/api/v1/simulation/runs/${encodeURIComponent(run_id)}/disruptions`, {
     method: "POST",

@@ -20,6 +20,7 @@ import {
   event_label,
   policy_label,
   task_status_label,
+  vehicle_status_label,
 } from "./business_labels";
 import {
   create_facility,
@@ -76,6 +77,8 @@ function format_simulation_time(minute: number): string {
   return `${String(hour).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
 }
 
+type SyntheticDisruptionType = "ROAD_CLOSURE" | "VEHICLE_BREAKDOWN" | "WASTE_OVERFLOW" | "URGENT_TASK";
+
 function dispatch_score(dispatch: SyntheticDispatch, assessment: SyntheticAssessment) {
   const selected_ids = new Set(dispatch.tasks.map((task) => task.bin_id));
   const selected_bins = assessment.input_facts.candidates.filter((bin) => selected_ids.has(bin.target_id));
@@ -127,6 +130,7 @@ function ProductWorkbench() {
   const [simulation_run, set_simulation_run] = useState<SyntheticRunSnapshot | null>(null);
   const [run_loading, set_run_loading] = useState(false);
   const [run_error, set_run_error] = useState("");
+  const [run_auto_play, set_run_auto_play] = useState(false);
   const refresh_runtime = useCallback(async () => {
     set_runtime_error("");
     try {
@@ -159,6 +163,7 @@ function ProductWorkbench() {
     set_simulation_error("");
     set_simulation_dispatch(null);
     set_simulation_run(null);
+    set_run_auto_play(false);
     set_dispatch_error("");
     set_assessments({});
     set_dispatch_results({});
@@ -185,6 +190,7 @@ function ProductWorkbench() {
     set_dispatch_error("");
     set_simulation_dispatch(null);
     set_simulation_run(null);
+    set_run_auto_play(false);
     try {
       const result = await submit_synthetic_dispatch({
         seed: simulation_seed,
@@ -225,6 +231,7 @@ function ProductWorkbench() {
     set_assessment_error("");
     set_simulation_dispatch(null);
     set_simulation_run(null);
+    set_run_auto_play(false);
   }
 
   async function handle_assessment(agent_mode: SyntheticAssessmentMode) {
@@ -233,6 +240,7 @@ function ProductWorkbench() {
     set_dispatch_error("");
     set_simulation_dispatch(null);
     set_simulation_run(null);
+    set_run_auto_play(false);
     try {
       const result = await submit_synthetic_assessment({
         seed: simulation_seed,
@@ -263,6 +271,7 @@ function ProductWorkbench() {
       const started = await start_synthetic_run(current_dispatch_request());
       set_simulation_dispatch(started.dispatch);
       set_simulation_run(started.run);
+      set_run_auto_play(false);
     } catch (error: unknown) {
       set_run_error(error instanceof Error ? error.message : "执行仿真启动失败");
     } finally {
@@ -277,20 +286,26 @@ function ProductWorkbench() {
     set_run_loading(true);
     set_run_error("");
     try {
-      set_simulation_run(await step_synthetic_run(simulation_run.run_id, ticks));
+      const advanced = await step_synthetic_run(simulation_run.run_id, ticks);
+      set_simulation_run(advanced);
+      if (advanced.status !== "RUNNING") {
+        set_run_auto_play(false);
+      }
     } catch (error: unknown) {
       set_run_error(error instanceof Error ? error.message : "仿真时间推进失败");
+      set_run_auto_play(false);
     } finally {
       set_run_loading(false);
     }
   }
 
-  async function handle_disruption(disruption_type: "ROAD_CLOSURE" | "VEHICLE_BREAKDOWN") {
+  async function handle_disruption(disruption_type: SyntheticDisruptionType) {
     if (simulation_run === null) {
       return;
     }
     set_run_loading(true);
     set_run_error("");
+    set_run_auto_play(false);
     try {
       set_simulation_run(await disrupt_synthetic_run(simulation_run.run_id, disruption_type));
     } catch (error: unknown) {
@@ -299,6 +314,16 @@ function ProductWorkbench() {
       set_run_loading(false);
     }
   }
+
+  useEffect(() => {
+    if (!run_auto_play || run_loading || simulation_run?.status !== "RUNNING") {
+      return;
+    }
+    const timer = window.setTimeout(() => {
+      void handle_step_run(1);
+    }, 1200);
+    return () => window.clearTimeout(timer);
+  }, [run_auto_play, run_loading, simulation_run]);
 
   useEffect(() => {
     void refresh_runtime();
@@ -614,12 +639,34 @@ function ProductWorkbench() {
                         <span><small>最近重规划</small><b>{simulation_run.last_replan_status}</b></span>
                       </div>
                       <div className="run-actions">
+                        <Button type={run_auto_play ? "default" : "primary"} loading={run_loading && !run_auto_play} disabled={simulation_run.status !== "RUNNING"} onClick={() => set_run_auto_play((current) => !current)}>{run_auto_play ? "暂停自动运行" : "自动运行"}</Button>
                         <Button loading={run_loading} disabled={simulation_run.status !== "RUNNING"} onClick={() => void handle_step_run(1)}>推进 5 分钟</Button>
                         <Button loading={run_loading} disabled={simulation_run.status !== "RUNNING"} onClick={() => void handle_step_run(6)}>推进 30 分钟</Button>
                         <Button danger loading={run_loading} disabled={simulation_run.status !== "RUNNING" || simulation_run.available_road_disruptions.length === 0} onClick={() => void handle_disruption("ROAD_CLOSURE")}>模拟道路封闭</Button>
                         <Button danger loading={run_loading} disabled={simulation_run.status !== "RUNNING" || simulation_run.available_vehicle_disruptions.length === 0} onClick={() => void handle_disruption("VEHICLE_BREAKDOWN")}>模拟车辆故障</Button>
+                        <Button danger loading={run_loading} disabled={simulation_run.status !== "RUNNING" || simulation_run.available_bin_disruptions.length === 0} onClick={() => void handle_disruption("WASTE_OVERFLOW")}>模拟垃圾量突增</Button>
+                        <Button danger loading={run_loading} disabled={simulation_run.status !== "RUNNING" || simulation_run.available_bin_disruptions.length === 0} onClick={() => void handle_disruption("URGENT_TASK")}>模拟紧急清运</Button>
                       </div>
                       {simulation_run.last_event && <Alert className="run-event" type={simulation_run.status === "NEEDS_ATTENTION" ? "warning" : "info"} showIcon title="最近扰动与重规划" description={simulation_run.last_event} />}
+                      <div className="vehicle-timeline">
+                        <div className="vehicle-timeline-heading">
+                          <div><Text strong>车辆运行时间线</Text><Text type="secondary"> 每个节点均来自 CitySim 真值快照</Text></div>
+                          <Tag color="cyan">{simulation_run.timeline.length} 个节点</Tag>
+                        </div>
+                        <div className="vehicle-timeline-list">
+                          {[...simulation_run.timeline].reverse().map((entry) => <div key={entry.sequence} className={`vehicle-timeline-entry vehicle-timeline-${entry.kind.toLowerCase()}`}>
+                            <div className="vehicle-timeline-marker"><b>{format_simulation_time(entry.current_minute)}</b><small>#{entry.sequence}</small></div>
+                            <div className="vehicle-timeline-content">
+                              <div><strong>{entry.summary}</strong><small>完成 {entry.completed_task_count}/{simulation_run.task_count} · 路线 {entry.route_count} · 重规划 {entry.replan_status}</small></div>
+                              <div className="vehicle-timeline-fleet">{entry.vehicles.map((vehicle) => <span key={vehicle.vehicle_id}>
+                                <b>{vehicle.vehicle_id}</b>
+                                <em>{vehicle_status_label(vehicle.status)}</em>
+                                <small>{Math.round(vehicle.current_load_liters)} 升{vehicle.active_task_id ? ` · ${vehicle.active_task_id}` : " · 无当前任务"}</small>
+                              </span>)}</div>
+                            </div>
+                          </div>)}
+                        </div>
+                      </div>
                     </>}
                   {run_error && <Alert className="run-event" type="error" showIcon title="执行仿真失败" description={run_error} />}
                 </div>

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
 from threading import Lock
 from typing import Literal
@@ -29,6 +29,8 @@ from cityclean_agent.workflow import WorkflowStatus, process_event
 class SyntheticDisruptionType(str, Enum):
     ROAD_CLOSURE = "ROAD_CLOSURE"
     VEHICLE_BREAKDOWN = "VEHICLE_BREAKDOWN"
+    WASTE_OVERFLOW = "WASTE_OVERFLOW"
+    URGENT_TASK = "URGENT_TASK"
 
 
 class SyntheticStepRequest(SandboxContract):
@@ -58,7 +60,26 @@ class SyntheticRunBin(SandboxContract):
     capacity_liters: float
     fill_ratio: float
     generation_liters_per_hour: float
-    task_status: ServiceTaskStatus
+    task_status: ServiceTaskStatus | None
+
+
+class SyntheticTimelineVehicle(SandboxContract):
+    vehicle_id: str
+    status: VehicleStatus
+    current_node_id: str
+    current_load_liters: float
+    active_task_id: str | None
+
+
+class SyntheticTimelineEntry(SandboxContract):
+    sequence: int
+    current_minute: int
+    kind: Literal["RUN_STARTED", "TIME_ADVANCED", "DISRUPTION", "RUN_COMPLETED"]
+    summary: str
+    completed_task_count: int
+    route_count: int
+    replan_status: str
+    vehicles: tuple[SyntheticTimelineVehicle, ...]
 
 
 class SyntheticRunSnapshot(SandboxContract):
@@ -80,6 +101,9 @@ class SyntheticRunSnapshot(SandboxContract):
     routes: tuple[SyntheticDispatchRoute, ...]
     available_road_disruptions: tuple[str, ...]
     available_vehicle_disruptions: tuple[str, ...]
+    available_bin_disruptions: tuple[str, ...]
+    closed_road_ids: tuple[str, ...]
+    timeline: tuple[SyntheticTimelineEntry, ...]
 
 
 class SyntheticRunStartResponse(SandboxContract):
@@ -100,6 +124,7 @@ class _SyntheticRunRecord:
     last_replan_status: str = "NOT_RUN"
     needs_attention: bool = False
     disruption_sequence: int = 0
+    timeline: list[SyntheticTimelineEntry] = field(default_factory=list)
 
 
 class SyntheticRunRegistry:
@@ -124,6 +149,11 @@ class SyntheticRunRegistry:
                 last_replan_status=dispatch.status,
             )
             self._records[run_id] = record
+            self._append_timeline(
+                record,
+                kind="RUN_STARTED",
+                summary="已安装通过独立校验的初始调度方案。",
+            )
             return SyntheticRunStartResponse(
                 dispatch=dispatch,
                 run=self._snapshot(run_id, record),
@@ -140,7 +170,17 @@ class SyntheticRunRegistry:
             if not record.needs_attention and not self._is_complete(record):
                 for _ in range(ticks):
                     record.context.sim.step()
-                    if self._is_complete(record):
+                    completed = self._is_complete(record)
+                    self._append_timeline(
+                        record,
+                        kind="RUN_COMPLETED" if completed else "TIME_ADVANCED",
+                        summary=(
+                            "全部任务执行完成。"
+                            if completed
+                            else f"仿真时钟推进 {record.context.sim.tick_minutes} 分钟。"
+                        ),
+                    )
+                    if completed:
                         break
             return self._snapshot(run_id, record)
 
@@ -164,8 +204,17 @@ class SyntheticRunRegistry:
                 location=target_id,
                 affected_entities=[target_id],
                 severity=5,
-                deadline=None,
-                description="仿真运行中的受控扰动。",
+                deadline=(
+                    state.current_time + 60
+                    if request.disruption_type is SyntheticDisruptionType.URGENT_TASK
+                    else None
+                ),
+                metadata=(
+                    {"demand": state.waste_points[target_id].current_load}
+                    if request.disruption_type is SyntheticDisruptionType.URGENT_TASK
+                    else {}
+                ),
+                description="仿真运行中的可复现受控扰动。",
             )
             result = process_event(
                 record.context.sim,
@@ -174,8 +223,18 @@ class SyntheticRunRegistry:
             )
             record.last_replan_status = result.status.value
             record.needs_attention = result.status is not WorkflowStatus.SUCCESS
-            kind_label = "道路封闭" if request.disruption_type is SyntheticDisruptionType.ROAD_CLOSURE else "车辆故障"
+            kind_label = {
+                SyntheticDisruptionType.ROAD_CLOSURE: "道路封闭",
+                SyntheticDisruptionType.VEHICLE_BREAKDOWN: "车辆故障",
+                SyntheticDisruptionType.WASTE_OVERFLOW: "垃圾量突增",
+                SyntheticDisruptionType.URGENT_TASK: "紧急清运任务",
+            }[request.disruption_type]
             record.last_event = f"{kind_label}：{target_id}；重规划结果：{result.status.value}"
+            self._append_timeline(
+                record,
+                kind="DISRUPTION",
+                summary=record.last_event,
+            )
             return self._snapshot(run_id, record)
 
     def _require(self, run_id: str) -> _SyntheticRunRecord:
@@ -199,7 +258,11 @@ class SyntheticRunRegistry:
     ) -> SyntheticRunSnapshot:
         state = record.context.sim.get_state()
         metrics = record.context.sim.calculate_metrics()
-        bins_by_id = {item.bin_id: item for item in record.context.selected_bins}
+        bins_by_id = {item.bin_id: item for item in record.context.network.bins}
+        tasks_by_target = {
+            task.target_id: task
+            for task in sorted(state.tasks.values(), key=lambda item: item.task_id)
+        }
         active_plan = state.active_plan
         routes = () if active_plan is None else build_synthetic_dispatch_routes(
             state,
@@ -246,13 +309,11 @@ class SyntheticRunRegistry:
                     capacity_liters=point.capacity,
                     fill_ratio=round(point.current_load / point.capacity, 3),
                     generation_liters_per_hour=round(point.generation_rate * 60, 1),
-                    task_status=state.tasks[
-                        next(
-                            task_id
-                            for task_id, task in state.tasks.items()
-                            if task.target_id == point.id
-                        )
-                    ].status,
+                    task_status=(
+                        tasks_by_target[point.id].status
+                        if point.id in tasks_by_target
+                        else None
+                    ),
                 )
                 for point in sorted(state.waste_points.values(), key=lambda item: item.id)
             ),
@@ -263,7 +324,57 @@ class SyntheticRunRegistry:
                 for vehicle in sorted(state.vehicles.values(), key=lambda item: item.id)
                 if vehicle.status is not VehicleStatus.BROKEN
             ),
+            available_bin_disruptions=tuple(
+                point.id
+                for point in sorted(
+                    state.waste_points.values(),
+                    key=lambda item: (-item.current_load / item.capacity, item.id),
+                )
+            ),
+            closed_road_ids=tuple(
+                road.id
+                for road in state.road_network.roads
+                if road.status is RoadStatus.CLOSED
+            ),
+            timeline=tuple(record.timeline[-48:]),
         )
+
+    @staticmethod
+    def _append_timeline(
+        record: _SyntheticRunRecord,
+        *,
+        kind: Literal["RUN_STARTED", "TIME_ADVANCED", "DISRUPTION", "RUN_COMPLETED"],
+        summary: str,
+    ) -> None:
+        state = record.context.sim.get_state()
+        active_plan = state.active_plan
+        completed_task_count = sum(
+            task.status is ServiceTaskStatus.COMPLETED
+            for task in state.tasks.values()
+        )
+        record.timeline.append(SyntheticTimelineEntry(
+            sequence=len(record.timeline) + 1,
+            current_minute=state.current_time,
+            kind=kind,
+            summary=summary,
+            completed_task_count=completed_task_count,
+            route_count=len(active_plan.vehicle_routes) if active_plan is not None else 0,
+            replan_status=record.last_replan_status,
+            vehicles=tuple(
+                SyntheticTimelineVehicle(
+                    vehicle_id=vehicle.id,
+                    status=vehicle.status,
+                    current_node_id=vehicle.current_node_id,
+                    current_load_liters=round(vehicle.current_load, 1),
+                    active_task_id=(
+                        vehicle.assigned_tasks[0]
+                        if vehicle.assigned_tasks
+                        else None
+                    ),
+                )
+                for vehicle in sorted(state.vehicles.values(), key=lambda item: item.id)
+            ),
+        ))
 
     @staticmethod
     def _route_road_ids(state) -> tuple[str, ...]:
@@ -291,11 +402,28 @@ class SyntheticRunRegistry:
     def _default_disruption_target(self, state, disruption_type: SyntheticDisruptionType) -> str:
         if disruption_type is SyntheticDisruptionType.ROAD_CLOSURE:
             candidates = self._route_road_ids(state)
-        else:
+        elif disruption_type is SyntheticDisruptionType.VEHICLE_BREAKDOWN:
             candidates = tuple(
                 route.vehicle_id
                 for route in (state.active_plan.vehicle_routes if state.active_plan else ())
                 if state.vehicles[route.vehicle_id].status is not VehicleStatus.BROKEN
+            )
+        elif disruption_type is SyntheticDisruptionType.WASTE_OVERFLOW:
+            candidates = tuple(
+                point.id
+                for point in sorted(
+                    state.waste_points.values(),
+                    key=lambda item: (-item.current_load / item.capacity, item.id),
+                )
+                if point.current_load < point.capacity
+            )
+        else:
+            candidates = tuple(
+                point.id
+                for point in sorted(
+                    state.waste_points.values(),
+                    key=lambda item: (-item.current_load / item.capacity, item.id),
+                )
             )
         if not candidates:
             raise ValueError("当前运行态没有可注入的扰动目标。")

@@ -154,16 +154,20 @@ export function TiandituProductMap({
 
     if (simulation !== null) {
       const nodes = new Map(simulation.nodes.map((node) => [node.node_id, node]));
+      const closed_road_ids = new Set(simulation_run?.closed_road_ids ?? []);
+      const live_bins = new Map((simulation_run?.bins ?? []).map((bin) => [bin.bin_id, bin]));
       simulation.edges.forEach((edge) => {
         const from = nodes.get(edge.from_node);
         const to = nodes.get(edge.to_node);
         if (from === undefined || to === undefined) {
           return;
         }
+        const closed = closed_road_ids.has(edge.edge_id);
         map.addOverLay(new api.Polyline(path_points(api, [from, to]), {
-          color: edge.congestion_level >= 0.72 ? "#d97706" : "#38606b",
-          opacity: edge.congestion_level >= 0.72 ? 0.5 : 0.28,
-          weight: edge.congestion_level >= 0.72 ? 2 : 1,
+          color: closed ? "#ef4444" : edge.congestion_level >= 0.72 ? "#d97706" : "#38606b",
+          lineStyle: closed ? "dashed" : "solid",
+          opacity: closed ? 0.95 : edge.congestion_level >= 0.72 ? 0.5 : 0.28,
+          weight: closed ? 5 : edge.congestion_level >= 0.72 ? 2 : 1,
         }));
       });
 
@@ -199,13 +203,15 @@ export function TiandituProductMap({
         .slice(0, 36)
         .forEach((bin) => {
           const critical = bin.risk_level === "CRITICAL";
+          const live_bin = live_bins.get(bin.bin_id);
+          const fill_ratio = live_bin?.fill_ratio ?? bin.fill_ratio;
           add_risk_point(
             api,
             map,
             bin,
             critical ? "#fb7185" : "#fbbf24",
             () => set_selected_detail(
-              `${bin.bin_id} · ${bin.site_name} · 装载率 ${Math.round(bin.fill_ratio * 100)}% · 风险 ${bin.risk_score} · ${bin.risk_reasons.join("；")}`,
+              `${bin.bin_id} · ${bin.site_name} · 当前装载率 ${Math.round(fill_ratio * 100)}% · 风险 ${bin.risk_score} · ${bin.risk_reasons.join("；")}`,
             ),
           );
         });
@@ -335,6 +341,7 @@ export function TiandituProductMap({
       {simulation_run === null && simulation_dispatch?.status === "SUCCESS" && <Tag color="cyan">已验证 {simulation_dispatch.summary.route_count} 条路线</Tag>}
       {simulation_run && <Tag color={simulation_run.status === "NEEDS_ATTENTION" ? "error" : "cyan"}>当前 {simulation_run.routes.length} 条路线</Tag>}
       {simulation_run && <Tag color={simulation_run.status === "NEEDS_ATTENTION" ? "error" : "processing"}>执行 +{simulation_run.elapsed_minutes} 分钟</Tag>}
+      {(simulation_run?.closed_road_ids.length ?? 0) > 0 && <Tag color="error">封闭道路 {simulation_run?.closed_road_ids.length}</Tag>}
     </div>
     {runtime_summary && <div className="product-map-facts" aria-live="polite">
       <strong><span className="live-dot" />最新运行事实</strong>
@@ -349,6 +356,7 @@ export function TiandituProductMap({
       {simulation && <span><i className="legend-simulation" />仿真高风险桶</span>}
       {((simulation_run?.routes.length ?? 0) > 0 || (simulation_run === null && simulation_dispatch?.status === "SUCCESS")) && <span><i className="legend-simulation-route" />仿真调度路线</span>}
       {simulation_run && <span><i className="legend-run-vehicle" />执行车辆</span>}
+      {(simulation_run?.closed_road_ids.length ?? 0) > 0 && <span><i className="legend-closed-road" />封闭道路</span>}
       <span><i className="legend-route" />调度路线</span>
     </div>}
     <div className="product-map-detail" aria-live="polite">{selected_detail}</div>
