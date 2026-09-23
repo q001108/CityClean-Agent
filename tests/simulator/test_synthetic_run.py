@@ -1,4 +1,5 @@
 from cityclean_agent.simulator.synthetic_dispatch import SyntheticDispatchRequest
+from cityclean_agent.simulator.synthetic_network import generate_synthetic_network
 from cityclean_agent.simulator.synthetic_run import (
     SyntheticDisruptionRequest,
     SyntheticDisruptionType,
@@ -68,6 +69,13 @@ def test_road_closure_after_movement_releases_routes_and_replans() -> None:
     assert target in disrupted.last_event
     assert target in disrupted.closed_road_ids
     assert disrupted.routes
+    assert target.endswith(("-F", "-R"))
+    display_edge_id = target[:-2]
+    network_edge_ids = {
+        edge.edge_id for edge in generate_synthetic_network(seed=42).edges
+    }
+    assert target not in network_edge_ids
+    assert display_edge_id in network_edge_ids
 
 
 def test_waste_overflow_and_urgent_task_are_recorded_on_timeline() -> None:

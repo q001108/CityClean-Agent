@@ -51,6 +51,10 @@ function path_points(api: TiandituNamespace, path: GeoCoordinate[]) {
   return path.map((point) => new api.LngLat(point.longitude, point.latitude));
 }
 
+function synthetic_edge_id_from_road_id(road_id: string): string {
+  return road_id.replace(/-(F|R)$/, "");
+}
+
 function add_risk_point(
   api: TiandituNamespace,
   map: TiandituMapInstance,
@@ -154,7 +158,9 @@ export function TiandituProductMap({
 
     if (simulation !== null) {
       const nodes = new Map(simulation.nodes.map((node) => [node.node_id, node]));
-      const closed_road_ids = new Set(simulation_run?.closed_road_ids ?? []);
+      const closed_edge_ids = new Set(
+        (simulation_run?.closed_road_ids ?? []).map(synthetic_edge_id_from_road_id),
+      );
       const live_bins = new Map((simulation_run?.bins ?? []).map((bin) => [bin.bin_id, bin]));
       simulation.edges.forEach((edge) => {
         const from = nodes.get(edge.from_node);
@@ -162,7 +168,7 @@ export function TiandituProductMap({
         if (from === undefined || to === undefined) {
           return;
         }
-        const closed = closed_road_ids.has(edge.edge_id);
+        const closed = closed_edge_ids.has(edge.edge_id);
         map.addOverLay(new api.Polyline(path_points(api, [from, to]), {
           color: closed ? "#ef4444" : edge.congestion_level >= 0.72 ? "#d97706" : "#38606b",
           lineStyle: closed ? "dashed" : "solid",
