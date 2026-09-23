@@ -32,9 +32,9 @@ def main() -> int:
 
     results = run_natural_language_evaluation(DeepSeekEventAgent())
     summary = evaluation_summary(results)
-    write_natural_language_evaluation_results(
-        Path("deepseek_nl_eval_results.json"), results
-    )
+    output_path = Path("artifacts/evaluations/deepseek_nl_eval_results.json")
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    write_natural_language_evaluation_results(output_path, results)
     print(f"评测样例数：{summary['total_cases']}")
     print(f"通过样例数：{summary['successful_cases']}")
     print(f"合同通过率：{summary['contract_success_rate']:.2%}")

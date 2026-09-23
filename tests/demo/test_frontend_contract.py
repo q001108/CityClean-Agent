@@ -19,7 +19,7 @@ FRAME_IDS = (
     "replanned",
     "final",
 )
-FIXTURE_PATH = Path("frontend/fixtures/vehicle_breakdown_replan.json")
+FIXTURE_PATH = Path("knowledge_base/demo/fixtures/vehicle_breakdown_replan.json")
 
 
 def test_frontend_contract_is_json_serializable_with_complete_timeline() -> None:

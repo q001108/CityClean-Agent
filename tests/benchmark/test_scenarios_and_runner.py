@@ -192,6 +192,7 @@ def test_batch_module_entry_runs_in_a_temporary_output_directory(tmp_path: Path)
         check=False,
         capture_output=True,
         text=True,
+        encoding="utf-8",
     )
 
     assert completed.returncode == 0, completed.stderr
@@ -199,4 +200,6 @@ def test_batch_module_entry_runs_in_a_temporary_output_directory(tmp_path: Path)
     assert "urgent_infeasible" in completed.stdout
     assert "STATIC_NO_REPLAN" in completed.stdout
     assert "EVENT_POLICY_REPLAN" in completed.stdout
-    assert (tmp_path / "benchmark_comparison_results.json").is_file()
+    assert (
+        tmp_path / "artifacts" / "evaluations" / "benchmark_comparison_results.json"
+    ).is_file()

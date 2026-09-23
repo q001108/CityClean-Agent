@@ -138,6 +138,14 @@ def test_past_response_deadline_is_rejected() -> None:
         DeepSeekEventAgent(FakeModel(payload)).decide(make_event(), make_state())
 
 
+def test_response_deadline_equal_to_current_time_is_rejected() -> None:
+    payload = valid_payload()
+    payload["response_deadline"] = 10
+
+    with pytest.raises(DeepSeekEventAgentError, match="deadline"):
+        DeepSeekEventAgent(FakeModel(payload)).decide(make_event(), make_state())
+
+
 def test_response_deadline_is_an_absolute_simulation_minute() -> None:
     state = make_state()
     state.current_time = 20

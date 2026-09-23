@@ -2,7 +2,7 @@ import pytest
 
 from cityclean_agent.domain.enums import RoadStatus
 from cityclean_agent.domain.models import Road
-from cityclean_agent.domain.road_network import RoadNetwork
+from cityclean_agent.domain.road_network import GeoCoordinate, RoadNetwork
 
 
 def make_network() -> RoadNetwork:
@@ -64,3 +64,18 @@ def test_duplicate_road_ids_are_rejected() -> None:
 
     with pytest.raises(ValueError, match="duplicate"):
         RoadNetwork([road, road])
+
+
+def test_node_coordinates_are_validated_and_returned_as_a_copy() -> None:
+    network = RoadNetwork(
+        [Road("R1", "A", "B", distance=1, travel_time=1)],
+        node_coordinates={"A": GeoCoordinate(114.0913, 32.147)},
+    )
+
+    coordinates = network.node_coordinates
+    coordinates["B"] = GeoCoordinate(114.1, 32.15)
+
+    assert network.get_node_coordinate("A") == GeoCoordinate(114.0913, 32.147)
+    assert network.get_node_coordinate("B") is None
+    with pytest.raises(ValueError, match="longitude"):
+        GeoCoordinate(181, 32.147)

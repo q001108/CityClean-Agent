@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from enum import Enum
 
 from cityclean_agent.agent.mock_event_agent import MockEventAgent
+from cityclean_agent.agent.protocols import EventDecisionAgent
 from cityclean_agent.domain.models import CityEvent, DispatchPlan
 from cityclean_agent.domain.task_builder import build_task_changes
 from cityclean_agent.optimizer.ortools_optimizer import ORToolsOptimizer
@@ -41,7 +42,7 @@ def process_event(
     sim: CitySim,
     event: CityEvent,
     *,
-    event_agent: MockEventAgent | None = None,
+    event_agent: EventDecisionAgent | None = None,
     optimizer: ORToolsOptimizer | None = None,
     verifier: PlanVerifier | None = None,
 ) -> WorkflowResult:

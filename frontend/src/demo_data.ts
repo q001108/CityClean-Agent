@@ -1,5 +1,5 @@
-import fixture_data from "../fixtures/vehicle_breakdown_replan.json";
-import v2_fixture_data from "../fixtures/complaint_urgent_v2.json";
+import fixture_data from "../../knowledge_base/demo/fixtures/vehicle_breakdown_replan.json";
+import v2_fixture_data from "../../knowledge_base/demo/fixtures/complaint_urgent_v2.json";
 import type { FrontendFixture, V2ExperienceFixture } from "./types";
 
 const demo_scenario: FrontendFixture = fixture_data;

@@ -26,8 +26,12 @@ from cityclean_agent.policy.models import PolicyDecision, PolicyProfile
 
 
 _PROJECT_ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_GOLD_JSON_PATH = _PROJECT_ROOT / "data" / "cityclean_governance_gold_v0.1.json"
-DEFAULT_GOLD_JSONL_PATH = _PROJECT_ROOT / "data" / "cityclean_governance_gold_v0.1.jsonl"
+DEFAULT_GOLD_JSON_PATH = (
+    _PROJECT_ROOT / "knowledge_base" / "gold" / "cityclean_governance_gold_v0.1.json"
+)
+DEFAULT_GOLD_JSONL_PATH = (
+    _PROJECT_ROOT / "knowledge_base" / "gold" / "cityclean_governance_gold_v0.1.jsonl"
+)
 POLICY_PROFILE_ORDER = (
     PolicyProfile.BALANCED.value,
     PolicyProfile.URGENT_RESPONSE.value,

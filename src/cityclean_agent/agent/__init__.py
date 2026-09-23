@@ -5,10 +5,12 @@ from cityclean_agent.agent.deepseek_event_agent import (
     DeepSeekEventAgentError,
 )
 from cityclean_agent.agent.mock_event_agent import FixedBalancedAgent, MockEventAgent
+from cityclean_agent.agent.protocols import EventDecisionAgent
 
 __all__ = [
     "DeepSeekEventAgent",
     "DeepSeekEventAgentError",
+    "EventDecisionAgent",
     "FixedBalancedAgent",
     "MockEventAgent",
 ]

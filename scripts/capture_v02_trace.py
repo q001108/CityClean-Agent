@@ -29,7 +29,7 @@ def main() -> int:
     parser.add_argument(
         "--fixture-output",
         type=Path,
-        default=Path("frontend/fixtures/complaint_urgent_v2.json"),
+        default=Path("knowledge_base/demo/fixtures/complaint_urgent_v2.json"),
         help="offline fixture updated only after a successful capture",
     )
     args = parser.parse_args()

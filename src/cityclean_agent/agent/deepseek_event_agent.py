@@ -36,7 +36,9 @@ JSON 必须且只能包含以下英文机器字段，不能新增或改名：
 - event_type：必须原样使用输入的 event_type。
 - risk_level：1 到 5 的整数，不能使用 HIGH 等文字。
 - reasoning_summary：简短、非空的中文治理理由。
-- response_deadline：绝对模拟分钟，必须不早于 current_time；未知时为 null。
+- response_deadline：绝对模拟分钟，必须晚于 current_time；未知时为 null。
+  紧急事件也必须预留可执行时间，通常设置为 current_time + 30 到 current_time + 240，
+  不得直接等于 current_time。
 - priority_targets：数组，元素必须是当前有效 WastePoint ID。
 - policy_profile：只能是 BALANCED、URGENT_RESPONSE、OVERFLOW_CONTROL 或 MINIMAL_RESCHEDULE。
 - constraints：包含少量简短中文治理约束的数组。
@@ -45,6 +47,9 @@ JSON 必须且只能包含以下英文机器字段，不能新增或改名：
 event_type、timestamp、location 和 affected_entities 是系统确定性事实。
 若存在 natural_language_description，只能将其与 severity 和城市摘要结合为额外治理语境；
 不得覆盖这些事实，也不得虚构新的事件类型或目标。
+若 event.metadata 中存在 service_target_budget，priority_targets 数量不得超过该预算。
+资源不足时应结合风险、场所敏感度、预计满溢时间、服务窗口和传感可信度进行取舍，
+并在 reasoning_summary 中简要说明选择依据；不得简单复制全部候选目标。
 
 不得进行车辆分配、路线生成、最短路径计算、容量计算、ETA 计算、任务序列生成、
 距离计算、OR-Tools 目标计算或优化权重生成。
@@ -224,6 +229,13 @@ def _validate_cross_object_contract(
     invalid_targets = set(decision.priority_targets).difference(state.waste_points)
     if invalid_targets:
         raise DeepSeekEventAgentError("PolicyDecision 包含未知的 priority target")
+    target_budget = event.metadata.get("service_target_budget")
+    if (
+        isinstance(target_budget, int)
+        and not isinstance(target_budget, bool)
+        and len(decision.priority_targets) > target_budget
+    ):
+        raise DeepSeekEventAgentError("PolicyDecision 的 priority_targets 超过资源预算")
     if not isinstance(decision.policy_profile, PolicyProfile):
         raise DeepSeekEventAgentError("PolicyDecision 包含无效的 policy_profile")
     if (
@@ -233,6 +245,6 @@ def _validate_cross_object_contract(
         raise DeepSeekEventAgentError("PolicyDecision 的 reasoning_summary 无效")
     if (
         decision.response_deadline is not None
-        and decision.response_deadline < state.current_time
+        and decision.response_deadline <= state.current_time
     ):
-        raise DeepSeekEventAgentError("PolicyDecision 的 response_deadline 早于当前模拟时间")
+        raise DeepSeekEventAgentError("PolicyDecision 的 response_deadline 未晚于当前模拟时间")

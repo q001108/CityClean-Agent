@@ -90,13 +90,13 @@ def test_v2_fixture_is_deterministic_and_does_not_mislabel_historical_decision(t
     assert full["availability"] == "PROVENANCE_REQUIRED"
     output = write_v2_fixture(tmp_path / "v2.json")
     assert json.loads(output.read_text(encoding="utf-8")) == experience
-    committed_fixture = Path("frontend/fixtures/complaint_urgent_v2.json")
+    committed_fixture = Path("knowledge_base/demo/fixtures/complaint_urgent_v2.json")
     committed_payload = json.loads(committed_fixture.read_text(encoding="utf-8"))
     assert validate_v2_contract(committed_payload) == committed_payload
     if committed_payload["provenance"]["trace_source"] == "DETERMINISTIC":
         assert committed_payload == experience
     else:
-        trace_path = Path("data/v02_urgent_timing_trace.json")
+        trace_path = Path("knowledge_base/traces/v02_urgent_timing_trace.json")
         assert trace_path.is_file()
         assert committed_payload == build_v2_experience(trace_path)
 

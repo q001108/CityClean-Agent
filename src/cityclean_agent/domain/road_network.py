@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from heapq import heappop, heappush
-from typing import Iterable
+from typing import Iterable, Mapping
 
 from cityclean_agent.domain.enums import RoadStatus
 from cityclean_agent.domain.models import Road
@@ -19,12 +19,34 @@ class RoadPath:
     total_travel_time: int
 
 
+@dataclass(frozen=True, slots=True)
+class GeoCoordinate:
+    """A verified WGS84-style longitude/latitude pair for one city node."""
+
+    longitude: float
+    latitude: float
+
+    def __post_init__(self) -> None:
+        if not -180 <= self.longitude <= 180:
+            raise ValueError("longitude must be between -180 and 180")
+        if not -90 <= self.latitude <= 90:
+            raise ValueError("latitude must be between -90 and 90")
+
+
 class RoadNetwork:
     """A directed network where only open roads can be traversed."""
 
-    def __init__(self, roads: Iterable[Road] = ()) -> None:
+    def __init__(
+        self,
+        roads: Iterable[Road] = (),
+        *,
+        node_coordinates: Mapping[str, GeoCoordinate] | None = None,
+    ) -> None:
         self._roads: dict[str, Road] = {}
         self._outgoing: dict[str, list[Road]] = {}
+        self._node_coordinates = dict(node_coordinates or {})
+        if any(not node_id for node_id in self._node_coordinates):
+            raise ValueError("coordinate node IDs must not be empty")
         for road in roads:
             self.add_road(road)
 
@@ -43,6 +65,17 @@ class RoadNetwork:
             for road in self._roads.values()
             for node_id in (road.from_node, road.to_node)
         )
+
+    @property
+    def node_coordinates(self) -> dict[str, GeoCoordinate]:
+        """Return an isolated copy of known real-world node coordinates."""
+
+        return dict(self._node_coordinates)
+
+    def get_node_coordinate(self, node_id: str) -> GeoCoordinate | None:
+        """Return a node coordinate when the state source supplied one."""
+
+        return self._node_coordinates.get(node_id)
 
     def add_road(self, road: Road) -> None:
         """Add one directed road, rejecting duplicate identifiers."""

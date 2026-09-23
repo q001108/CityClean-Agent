@@ -32,7 +32,9 @@ def main() -> int:
 
     agent = DeepSeekEventAgent()
     results = tuple(run_live_e2e_case(agent, case) for case in live_e2e_cases())
-    write_live_e2e_results(Path("deepseek_e2e_smoke_results.json"), results)
+    output_path = Path("artifacts/evaluations/deepseek_e2e_smoke_results.json")
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    write_live_e2e_results(output_path, results)
     for result in results:
         decision = result.policy_decision or {}
         target = result.target_task_outcome or {}

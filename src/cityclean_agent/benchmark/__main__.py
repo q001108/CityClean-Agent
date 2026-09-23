@@ -10,7 +10,9 @@ def main() -> None:
     """Execute the scenario bank and print a compact plain-text summary."""
 
     results = BenchmarkRunner().run_all()
-    write_results(Path("benchmark_comparison_results.json"), results)
+    output_path = Path("artifacts/evaluations/benchmark_comparison_results.json")
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    write_results(output_path, results)
     print(
         "场景 ID                    调度模式                              "
         "任务完成率  紧急任务完成率  平均响应时间  满溢次数  总行驶距离  终态"

@@ -216,3 +216,16 @@ def test_calculate_metrics_contains_only_currently_observable_values() -> None:
         "overflow_count": 0,
         "broken_vehicle_count": 1,
     }
+
+
+def test_release_cancels_en_route_progress_for_replanning() -> None:
+    sim = CitySim(make_state(with_plan=True))
+    sim.step()
+
+    assert sim.get_state().vehicles["V1"].status is VehicleStatus.SERVICING
+    assert sim.release_unstarted_tasks() == ("T1",)
+
+    released = sim.get_state()
+    assert released.tasks["T1"].status is ServiceTaskStatus.PENDING
+    assert released.vehicles["V1"].status is VehicleStatus.AVAILABLE
+    assert released.vehicles["V1"].assigned_tasks == []

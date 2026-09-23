@@ -23,6 +23,7 @@ from cityclean_agent.optimizer.results import OptimizationResult, OptimizationSt
 _CAPACITY_SCALE = 1_000
 _UNREACHABLE_COST = 10**8
 _MAX_ROUTE_TIME = 10**9
+_SEARCH_TIME_LIMIT_SECONDS = 5
 
 
 @dataclass(frozen=True, slots=True)
@@ -136,6 +137,7 @@ class ORToolsOptimizer:
             routing_enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC
         )
         search_parameters.use_full_propagation = True
+        search_parameters.time_limit.seconds = _SEARCH_TIME_LIMIT_SECONDS
         solution = routing.SolveWithParameters(search_parameters)
         if solution is None:
             return self._infeasible("REQUIRED_TASKS_UNASSIGNABLE")

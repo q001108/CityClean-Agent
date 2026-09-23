@@ -109,6 +109,9 @@ class CitySim:
                 and self._state.tasks.get(task_id) is not None
                 and self._state.tasks[task_id].status is ServiceTaskStatus.IN_PROGRESS
             ]
+            if not vehicle.assigned_tasks and vehicle.status is not VehicleStatus.BROKEN:
+                vehicle.status = VehicleStatus.AVAILABLE
+                self._vehicle_progress.pop(vehicle.id, None)
         self._state.active_plan = None
         return tuple(released_task_ids)
 

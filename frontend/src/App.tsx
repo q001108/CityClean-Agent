@@ -1,6 +1,7 @@
-import { Button, Card, ConfigProvider, Layout, Space, Steps, Tag, Typography, theme } from "antd";
+import { Button, Card, ConfigProvider, Layout, Segmented, Space, Steps, Tag, Typography, theme } from "antd";
 import { useState } from "react";
 import { CityTopology } from "./CityTopology";
+import { TiandituCityMap } from "./TiandituCityMap";
 import { DecisionPanel } from "./components/DecisionPanel";
 import { EventPanel } from "./components/EventPanel";
 import { MetricsPanel } from "./components/MetricsPanel";
@@ -47,11 +48,13 @@ export function App() {
   const [page, set_page] = useState<Page>("video");
   const [video_stage, set_video_stage] = useState(-1);
   const [breakdown_stage, set_breakdown_stage] = useState(0);
+  const [map_view, set_map_view] = useState<"tianditu" | "logical">("tianditu");
   const [complaint_text, set_complaint_text] = useState("");
   const [input_error, set_input_error] = useState<string | null>(null);
   const breakdown = current_breakdown(demo.frames, breakdown_stage);
   const video_final = replay_modules.length;
   const breakdown_final = demo.frames.length - 1;
+  const active_assignments = breakdown.current.assignment.after_assignments ?? breakdown.current.assignment.before_assignments;
 
   const select_page = (next: Page) => { set_page(next); set_video_stage(-1); set_breakdown_stage(0); set_complaint_text(""); set_input_error(null); };
   const fill_demo = () => { set_complaint_text(frozen_complaint); set_input_error(null); };
@@ -94,9 +97,9 @@ export function App() {
         </section>}
         {page === "ablation" && <section className="page-shell"><div className="v2-tags"><Tag color="gold">精选展示案例</Tag><Tag>相同初始状态、事件、tick、时长与 Metrics</Tag></div><Title level={3}>公平消融对照</Title><Paragraph>{full_ready ? "Full 条件使用真实 DeepSeek API 冻结 PolicyDecision；三种条件共享输入，差异仅来自策略选择与是否重规划。" : "当前没有可用的真实 Full 轨迹，因此不会将固定策略冒充为 DeepSeek。"}</Paragraph><div className="ablation-grid">{v2.ablation_comparison.map((item) => <AblationCard item={item} source={v2.provenance.trace_source} has_policy={v2.policy_decision !== null} key={item.mode} />)}</div></section>}
         {page === "evidence" && <section className="page-shell"><Card title="实验说明与数据真实性" className="evidence-card"><Tag color="gold">精选展示案例</Tag><Paragraph>{v2.experience.selected_case_disclosure}</Paragraph><div className="metric-strip experiment-strip"><span>Gold cases<strong>{v2.experiment_summary.gold_cases}</strong></span><span>Successful calls<strong>{v2.experiment_summary.successful_calls}</strong></span><span>合同成功率<strong><Percent value={v2.experiment_summary.contract_success_rate} digits={2} /></strong></span><span>Policy Accuracy<strong><Percent value={v2.experiment_summary.policy_accuracy} digits={2} /></strong></span><span>Macro-F1<strong>{v2.experiment_summary.macro_f1.toFixed(4)}</strong></span><span>Paired Context<strong><Percent value={v2.experiment_summary.paired_context_accuracy} digits={2} /></strong></span><span>Provider failures<strong>{v2.experiment_summary.provider_failures}</strong></span></div><Paragraph className="secondary-copy">冻结 fixture 不含 API Key、身份信息或 Provider 私有响应字段。</Paragraph></Card></section>}
-        {page === "breakdown" && <section className="breakdown-shell"><Steps current={breakdown_stage} responsive={false} items={demo.timeline.map((item) => ({ title: item.label }))} /><div className="breakdown-grid"><Card title="城市逻辑拓扑"><CityTopology city={breakdown.current.city} compact /></Card><Space orientation="vertical" className="full-width"><EventPanel event={breakdown.current.event} released_task_ids={breakdown.current.assignment.released_task_ids} release_pending={breakdown.release_pending} /><DecisionPanel decision={breakdown.decision} retained_from_replanned={breakdown.retained} /><OptimizerPanel optimizer={breakdown.optimizer} retained_from_replanned={breakdown.retained} /><VerifierPanel verifier={breakdown.current.verifier} retained_from_replanned={breakdown.retained} /></Space></div>{breakdown.current.metrics && <MetricsPanel metrics={breakdown.current.metrics} phase_status={breakdown.current.phase_status} />}</section>}
+        {page === "breakdown" && <section className="breakdown-shell"><Steps current={breakdown_stage} responsive={false} items={demo.timeline.map((item) => ({ title: item.label }))} /><div className="breakdown-grid"><Card title="城市调度场景" extra={<Segmented size="small" value={map_view} onChange={set_map_view} options={[{ label: "天地图", value: "tianditu" }, { label: "逻辑拓扑", value: "logical" }]} />}>{map_view === "tianditu" ? <TiandituCityMap city={breakdown.current.city} assignments={active_assignments} compact /> : <CityTopology city={breakdown.current.city} compact />}</Card><Space orientation="vertical" className="full-width"><EventPanel event={breakdown.current.event} released_task_ids={breakdown.current.assignment.released_task_ids} release_pending={breakdown.release_pending} /><DecisionPanel decision={breakdown.decision} retained_from_replanned={breakdown.retained} /><OptimizerPanel optimizer={breakdown.optimizer} retained_from_replanned={breakdown.retained} /><VerifierPanel verifier={breakdown.current.verifier} retained_from_replanned={breakdown.retained} /></Space></div>{breakdown.current.metrics && <MetricsPanel metrics={breakdown.current.metrics} phase_status={breakdown.current.phase_status} />}</section>}
       </Content>
-      <Footer className="frame-controls"><Text type="secondary">默认回放无业务网络请求；浏览器不读取 API Key。</Text><Space><Button onClick={reset} disabled={reset_disabled}>重置</Button><Button onClick={previous} disabled={previous_disabled}>上一步</Button><Button type="primary" onClick={next} disabled={next_disabled}>下一步</Button></Space></Footer>
+      <Footer className="frame-controls"><Text type="secondary">冻结业务回放不调用外部服务；天地图视图仅加载底图，不参与路线计算。</Text><Space><Button onClick={reset} disabled={reset_disabled}>重置</Button><Button onClick={previous} disabled={previous_disabled}>上一步</Button><Button type="primary" onClick={next} disabled={next_disabled}>下一步</Button></Space></Footer>
     </Layout>
   </ConfigProvider>;
 }

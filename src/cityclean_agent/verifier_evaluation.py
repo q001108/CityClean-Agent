@@ -16,7 +16,9 @@ def main() -> int:
 
     results = evaluate_verifier_suite()
     summary = summarize_verifier_evaluation(results)
-    write_verifier_evaluation_results(Path("verifier_adversarial_results.json"), results)
+    output_path = Path("artifacts/evaluations/verifier_adversarial_results.json")
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    write_verifier_evaluation_results(output_path, results)
     print(f"评测样例数：{summary.total_cases}")
     print(
         "合法对照接受数："

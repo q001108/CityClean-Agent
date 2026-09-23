@@ -30,9 +30,9 @@ def main() -> int:
     )
     cases = load_governance_gold_cases(DEFAULT_GOLD_JSON_PATH)
     summary = evaluate_governance_gold(DeepSeekEventAgent(), cases)
-    write_governance_gold_evaluation_results(
-        Path("deepseek_governance_gold_results.json"), summary
-    )
+    output_path = Path("artifacts/evaluations/deepseek_governance_gold_results.json")
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    write_governance_gold_evaluation_results(output_path, summary)
     _print_summary(summary)
     return 0
 

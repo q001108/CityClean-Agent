@@ -18,7 +18,7 @@ from cityclean_agent.domain.models import (
     VehicleRoute,
     WastePoint,
 )
-from cityclean_agent.domain.road_network import RoadNetwork, RoadPath
+from cityclean_agent.domain.road_network import GeoCoordinate, RoadNetwork, RoadPath
 from cityclean_agent.domain.task_builder import TaskBuildResult, build_task_changes
 
 __all__ = [
@@ -26,6 +26,7 @@ __all__ = [
     "CityEventType",
     "CityState",
     "DispatchPlan",
+    "GeoCoordinate",
     "Road",
     "RoadNetwork",
     "RoadPath",

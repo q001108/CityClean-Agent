@@ -9,11 +9,17 @@ from typing import Any, Iterable, Mapping
 
 
 _PROJECT_ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_EVALUATION_RESULTS_PATH = _PROJECT_ROOT / "deepseek_governance_gold_results.json"
-DEFAULT_GOLD_JSON_PATH = _PROJECT_ROOT / "data" / "cityclean_governance_gold_v0.1.json"
-DEFAULT_GOLD_JSONL_PATH = _PROJECT_ROOT / "data" / "cityclean_governance_gold_v0.1.jsonl"
+DEFAULT_EVALUATION_RESULTS_PATH = (
+    _PROJECT_ROOT / "artifacts" / "evaluations" / "deepseek_governance_gold_results.json"
+)
+DEFAULT_GOLD_JSON_PATH = (
+    _PROJECT_ROOT / "knowledge_base" / "gold" / "cityclean_governance_gold_v0.1.json"
+)
+DEFAULT_GOLD_JSONL_PATH = (
+    _PROJECT_ROOT / "knowledge_base" / "gold" / "cityclean_governance_gold_v0.1.jsonl"
+)
 DEFAULT_REPORT_PATH = (
-    _PROJECT_ROOT / "docs" / "evaluation" / "governance_error_analysis_v0.1.md"
+    _PROJECT_ROOT / "knowledge_base" / "reports" / "governance_error_analysis_v0.1.md"
 )
 
 
