@@ -411,6 +411,41 @@ function ProductWorkbench() {
   const shared_target_count = rule_score && deepseek_score
     ? [...rule_score.selected_ids].filter((target_id) => deepseek_score.selected_ids.has(target_id)).length
     : null;
+  const scenario_ready = simulation !== null;
+  const assessment_ready = active_assessment_mode !== null;
+  const dispatch_ready = simulation_dispatch?.status === "SUCCESS";
+  const run_ready = simulation_run !== null;
+  const disruption_ready = Boolean(simulation_run?.last_event);
+  const disruption_skipped = simulation_run?.status === "COMPLETED" && !simulation_run.last_event;
+  const result_ready = simulation_run?.status === "COMPLETED"
+    || Boolean(simulation_run?.last_event && simulation_run.last_replan_status !== "NOT_RUN");
+  const workflow_steps = [
+    { label: "场景准备", complete: scenario_ready },
+    { label: "治理研判", complete: assessment_ready },
+    { label: "生成调度", complete: dispatch_ready },
+    { label: "启动仿真", complete: run_ready },
+    { label: "注入扰动", complete: disruption_ready, skipped: disruption_skipped },
+    { label: "查看结果", complete: result_ready },
+  ];
+  const first_incomplete_step = workflow_steps.findIndex((step) => !step.complete && !step.skipped);
+  const current_step_index = first_incomplete_step === -1
+    ? workflow_steps.length - 1
+    : first_incomplete_step;
+  const next_action = !scenario_ready
+    ? "SCENARIO"
+    : !assessment_ready
+      ? "ASSESSMENT"
+      : !dispatch_ready
+        ? "DISPATCH"
+        : !run_ready
+          ? "RUN"
+          : !disruption_ready && simulation_run.status === "RUNNING"
+            ? "DISRUPTION"
+            : "RESULT";
+
+  function scroll_to(element_id: string) {
+    document.getElementById(element_id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
 
   return <ConfigProvider theme={{ algorithm: theme.darkAlgorithm, token: { colorPrimary: "#2dd4bf", borderRadius: 10, fontFamily: "Inter, 'Microsoft YaHei', sans-serif" } }}>
     <Layout className="product-layout">
@@ -418,77 +453,63 @@ function ProductWorkbench() {
         <div>
           <Text className="product-eyebrow">城市环卫智能体</Text>
           <Title level={1}>城市环卫智能调度工作台</Title>
-          <Text type="secondary">产品运行入口 · 实时调度服务</Text>
+          <Text type="secondary">资源约束研判、确定性调度与动态重规划演示</Text>
         </div>
-        <Space wrap>
-          <Tag color="success">确定性核心可用</Tag>
-          {runtime_tag}
-          {runtime_status?.data_mode === "test" && <Tag color="gold">本地测试数据</Tag>}
-          {runtime_status?.data_mode === "production" && <Tag color="cyan">生产数据源</Tag>}
-          <Button size="small" onClick={() => { void refresh_runtime(); void refresh_facilities(); }}>刷新状态</Button>
-          <a className="demo-link" href="/demo">打开历史比赛演示</a>
-        </Space>
+        <Tag className="synthetic-mode-tag" color="gold">合成仿真模式</Tag>
       </Header>
 
       <Content className="product-content">
-        {runtime_error && <Alert type="error" showIcon title="无法连接运行服务" description={runtime_error} />}
-        {facility_registry_error && <Alert type="warning" showIcon title="设施台账暂不可用" description={facility_registry_error} />}
-        {!runtime_error && runtime_status?.status === "unavailable" && <Alert
-          type="warning"
-          showIcon
-          title="运行服务尚未连接真实状态源"
-          description="运行服务已启动，但尚未连接城市状态源，因此快照和事件入口保持关闭。"
-        />}
-        <section className="product-main-grid">
-          <Card className="product-map-card" title="城市实时态势" extra={<Text type="secondary">信阳市</Text>}>
-            <TiandituProductMap
-              snapshot={snapshot}
-              facilities={facilities}
-              pending_coordinate={pending_coordinate}
-              on_map_select={handle_map_select}
-              simulation={simulation}
-              simulation_dispatch={simulation_dispatch}
-              simulation_run={simulation_run}
-              runtime_summary={runtime_summary}
-            />
-          </Card>
+        {runtime_error && <Alert className="primary-runtime-error" type="error" showIcon title="无法连接应用服务" description={`${runtime_error} 合成实验暂时无法加载，请确认后端服务已启动。`} />}
 
-          <aside className="product-sidebar">
-            <Card title="运行服务状态" className="product-card">
-              <Descriptions column={1} size="small">
-                <Descriptions.Item label="连接状态">{runtime_tag}</Descriptions.Item>
-                <Descriptions.Item label="状态来源">{runtime_status?.source_name ?? "—"}</Descriptions.Item>
-                <Descriptions.Item label="仿真时刻">{snapshot?.current_time ?? "—"}</Descriptions.Item>
-                <Descriptions.Item label="车辆 / 任务">{snapshot ? `${snapshot.vehicles.length} / ${snapshot.tasks.length}` : "—"}</Descriptions.Item>
-                <Descriptions.Item label="活动事件">{snapshot?.active_events.length ?? "—"}</Descriptions.Item>
-                <Descriptions.Item label="当前计划">{snapshot?.active_plan ? "已生成" : "—"}</Descriptions.Item>
-              </Descriptions>
-              <Paragraph className="runtime-detail">{runtime_status?.detail ?? "正在读取运行状态…"}</Paragraph>
-            </Card>
+        <section className="workbench-intro" aria-labelledby="workbench-purpose">
+          <div className="mode-boundary">
+            <div>
+              <Tag color="gold">合成仿真模式</Tag>
+              <strong id="workbench-purpose">真实地图底图上的决策仿真实验</strong>
+            </div>
+            <p>地图底图来自天地图；车辆、垃圾桶、传感器和事件均为可复现合成数据。</p>
+            <small>当前运行于合成演示模式；生产城市状态源{runtime_ready ? "已连接" : "尚未启用"}，设施台账{facility_registry_error ? "尚未启用" : "可用"}，均不影响下方仿真实验。</small>
+          </div>
 
-            <Card title="运行链路" className="product-card">
-              <ol className="runtime-chain">
-                <li><span>01</span><div><strong>业务事件接入</strong><small>校验事件事实和受影响对象</small></div></li>
-                <li><span>02</span><div><strong>智能研判</strong><small>形成治理策略，不直接计算路线</small></div></li>
-                <li><span>03</span><div><strong>确定性调度</strong><small>构建任务并优化车辆路线</small></div></li>
-                <li><span>04</span><div><strong>独立验证</strong><small>硬约束校验通过后安装计划</small></div></li>
-                <li><span>05</span><div><strong>状态反馈</strong><small>同步城市状态源和执行系统</small></div></li>
-              </ol>
-            </Card>
+          <ol className="workflow-steps" aria-label="决策仿真主流程">
+            {workflow_steps.map((step, index) => <li
+              key={step.label}
+              className={`${step.complete ? "is-complete" : ""}${step.skipped ? " is-skipped" : ""}${index === current_step_index ? " is-current" : ""}`}
+              aria-current={index === current_step_index ? "step" : undefined}
+            >
+              <span>{step.complete ? "✓" : step.skipped ? "—" : index + 1}</span>
+              <strong>{step.label}</strong>
+              <small>{step.skipped ? "已跳过" : index === current_step_index ? "当前步骤" : step.complete ? "已完成" : "待进行"}</small>
+            </li>)}
+          </ol>
 
-            <Card title="设施台账" className="product-card" extra={<Tag color="purple">{facilities.length} 条</Tag>}>
-              <Paragraph className="facility-guidance">点击地图任意位置，登记真实设施基础信息。台账不会自动进入调度运行态。</Paragraph>
-              {facilities.length === 0
-                ? <Text type="secondary">尚未登记设施</Text>
-                : <ul className="facility-list">{facilities.slice(-5).reverse().map((facility) => <li key={facility.facility_id}>
-                    <div><strong>{facility.name}</strong><small>{facility.facility_id} · {facility_type_label(facility.facility_type)}</small></div>
-                    <Tag color={facility.status === "ACTIVE" ? "success" : "default"}>{facility.status === "ACTIVE" ? "启用" : "停用"}</Tag>
-                  </li>)}</ul>}
-            </Card>
-          </aside>
+          <div className="next-action-panel" aria-live="polite">
+            <div>
+              <Text className="next-action-label">当前下一步</Text>
+              {next_action === "SCENARIO" && <strong>正在准备可复现的合成场景，请稍候。</strong>}
+              {next_action === "ASSESSMENT" && <strong>场景已准备完成，下一步选择规则或 DeepSeek 进行治理研判。</strong>}
+              {next_action === "DISPATCH" && <strong>治理研判已完成，下一步生成调度方案并执行独立校验。</strong>}
+              {next_action === "RUN" && <strong>调度与校验已完成，下一步启动 CitySim 执行仿真。</strong>}
+              {next_action === "DISRUPTION" && <strong>车辆已经进入执行阶段，下一步选择一种扰动并观察重规划。</strong>}
+              {next_action === "RESULT" && <strong>{disruption_skipped
+                ? "本轮仿真已自然完成，未注入扰动。可查看基础执行结果，或重新生成场景后体验扰动重规划。"
+                : "执行结果已经产生，可查看车辆状态、扰动影响和重规划结果。"}</strong>}
+            </div>
+            <Space wrap className="next-action-buttons">
+              {next_action === "SCENARIO" && <Button type="primary" loading={simulation_loading} onClick={() => void load_simulation(simulation_seed)}>准备合成场景</Button>}
+              {next_action === "ASSESSMENT" && <>
+                <Button type="primary" loading={assessment_loading === "RULE"} onClick={() => void handle_assessment("RULE")}>运行规则研判</Button>
+                <Button loading={assessment_loading === "DEEPSEEK"} onClick={() => void handle_assessment("DEEPSEEK")}>使用 DeepSeek 研判</Button>
+              </>}
+              {next_action === "DISPATCH" && <Button type="primary" loading={dispatch_loading} onClick={() => void handle_simulation_dispatch()}>生成当前策略方案</Button>}
+              {next_action === "RUN" && <Button type="primary" loading={run_loading} onClick={() => void handle_start_run()}>启动执行仿真</Button>}
+              {next_action === "DISRUPTION" && <Button type="primary" onClick={() => scroll_to("run-console")}>前往扰动控制</Button>}
+              {next_action === "RESULT" && <Button type="primary" onClick={() => scroll_to("run-console")}>查看执行结果</Button>}
+            </Space>
+          </div>
         </section>
 
-        <Card className="simulation-card" title="地图区域仿真沙盘" extra={<Tag color="gold">非真实业务数据</Tag>}>
+        <Card id="synthetic-experiment" className="simulation-card" title="合成运营实验" extra={<Tag color="gold">非真实业务数据</Tag>}>
           <div className="simulation-toolbar">
             <div>
               <Text strong>确定性场景种子</Text>
@@ -519,7 +540,7 @@ function ProductWorkbench() {
                   <small>{simulation_site_labels[bin.site_type]} · 装载率 {Math.round(bin.fill_ratio * 100)}% · 风险 {bin.risk_score}</small>
                 </button>)}</div>
             </div>
-            <div className="dispatch-builder">
+            <div id="assessment-workbench" className="dispatch-builder">
               <div className="dispatch-builder-heading">
                 <div><Text strong>资源约束研判实验台</Text><Text type="secondary"> 同一批候选、同一资源预算，比较规则与大模型的治理取舍</Text></div>
                 <Tag color="volcano">资源不足场景</Tag>
@@ -620,7 +641,7 @@ function ProductWorkbench() {
                   <span>{route.bin_sequence.join(" → ")}</span>
                   <small>{route.assigned_load_liters.toFixed(0)} / {route.vehicle_capacity_liters.toFixed(0)} 升 · {route.total_distance_km.toFixed(1)} 千米 · 约 {route.total_travel_minutes} 分钟</small>
                 </div>)}</div>
-                <div className="run-console">
+                <div id="run-console" className="run-console">
                   <div className="run-console-heading">
                     <div><Text strong>执行仿真</Text><Text type="secondary"> CitySim 以 5 分钟为步长推进</Text></div>
                     {simulation_run
@@ -675,6 +696,58 @@ function ProductWorkbench() {
             <Paragraph className="simulation-disclosure">{simulation.disclaimer} 当前沙盘用于验证研判字段、风险排序、调度约束与独立校验链路，不写入设施台账或生产 Runtime。</Paragraph>
           </>}
         </Card>
+
+        <Card className="product-map-card product-map-after-workflow" title="合成运行地图" extra={<Text type="secondary">天地图底图 · 信阳市</Text>}>
+          <TiandituProductMap
+            snapshot={snapshot}
+            facilities={facilities}
+            pending_coordinate={pending_coordinate}
+            on_map_select={handle_map_select}
+            simulation={simulation}
+            simulation_dispatch={simulation_dispatch}
+            simulation_run={simulation_run}
+            runtime_summary={runtime_summary}
+          />
+        </Card>
+
+        <details className="system-status-panel">
+          <summary>
+            <span><strong>系统与数据源状态</strong><small>生产接入、设施台账与历史演示</small></span>
+            <Tag>次级信息</Tag>
+          </summary>
+          <div className="system-status-content">
+            <Card title="生产运行服务" className="product-card" extra={runtime_tag}>
+              <Descriptions column={1} size="small">
+                <Descriptions.Item label="状态来源">{runtime_status?.source_name ?? "尚未配置"}</Descriptions.Item>
+                <Descriptions.Item label="数据模式">{runtime_status?.data_mode === "production" ? "生产数据" : runtime_status?.data_mode === "test" ? "测试数据" : "未启用"}</Descriptions.Item>
+                <Descriptions.Item label="车辆 / 任务">{snapshot ? `${snapshot.vehicles.length} / ${snapshot.tasks.length}` : "—"}</Descriptions.Item>
+                <Descriptions.Item label="当前计划">{snapshot?.active_plan ? "已生成" : "—"}</Descriptions.Item>
+              </Descriptions>
+              <Paragraph className="runtime-detail">{runtime_status?.detail ?? "正在读取运行状态…"}</Paragraph>
+            </Card>
+
+            <Card title="设施台账" className="product-card" extra={<Tag color={facility_registry_error ? "default" : "purple"}>{facility_registry_error ? "未启用" : `${facilities.length} 条`}</Tag>}>
+              <Paragraph className="facility-guidance">台账属于生产接入准备能力，不影响合成仿真实验。启用后可点击地图登记设施基础信息。</Paragraph>
+              {facility_registry_error
+                ? <Text type="secondary">当前未配置设施台账服务。</Text>
+                : facilities.length === 0
+                  ? <Text type="secondary">尚未登记设施</Text>
+                  : <ul className="facility-list">{facilities.slice(-5).reverse().map((facility) => <li key={facility.facility_id}>
+                      <div><strong>{facility.name}</strong><small>{facility.facility_id} · {facility_type_label(facility.facility_type)}</small></div>
+                      <Tag color={facility.status === "ACTIVE" ? "success" : "default"}>{facility.status === "ACTIVE" ? "启用" : "停用"}</Tag>
+                    </li>)}</ul>}
+            </Card>
+
+            <div className="secondary-entry-card">
+              <strong>其他入口</strong>
+              <p>历史比赛页面继续保留，仅用于回看既有演示，不属于当前产品主流程。</p>
+              <Space wrap>
+                <Button size="small" onClick={() => { void refresh_runtime(); void refresh_facilities(); }}>刷新接入状态</Button>
+                <a className="demo-link" href="/demo">打开历史比赛演示</a>
+              </Space>
+            </div>
+          </div>
+        </details>
 
       </Content>
 
