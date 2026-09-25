@@ -95,6 +95,13 @@ function initial_plan_status_label(status: string): string {
   return status === "VERIFICATION_FAILED" ? "校验未通过" : "方案需要处理";
 }
 
+function disruption_result_label(status: string): string {
+  if (status === "SUCCESS") return "已生成可执行方案，并通过独立校验。";
+  if (status === "INFEASIBLE") return "未生成可执行方案，需要人工处理。";
+  if (status === "VERIFICATION_FAILED") return "新方案未通过独立校验，需要人工处理。";
+  return "重规划未完成，需要人工核查。";
+}
+
 function event_summary_label(summary: string): string {
   return summary
     .replace("重规划结果：SUCCESS", "重规划结果：重规划成功")
@@ -155,6 +162,7 @@ function ProductWorkbench() {
   const [simulation_run, set_simulation_run] = useState<SyntheticRunSnapshot | null>(null);
   // The API retains only 48 timeline entries, so keep the first disruption boundary locally.
   const [first_disruption, set_first_disruption] = useState<{ run_id: string; sequence: number } | null>(null);
+  const [latest_disruption_seen, set_latest_disruption_seen] = useState<{ run_id: string; sequence: number; current_minute: number; route_count: number } | null>(null);
   const [run_loading, set_run_loading] = useState(false);
   const [run_error, set_run_error] = useState("");
   const [run_auto_play, set_run_auto_play] = useState(false);
@@ -191,6 +199,7 @@ function ProductWorkbench() {
     set_simulation_dispatch(null);
     set_simulation_run(null);
     set_first_disruption(null);
+    set_latest_disruption_seen(null);
     set_run_auto_play(false);
     set_dispatch_error("");
     set_assessments({});
@@ -300,6 +309,7 @@ function ProductWorkbench() {
       set_simulation_dispatch(started.dispatch);
       set_simulation_run(started.run);
       set_first_disruption(null);
+      set_latest_disruption_seen(null);
       set_run_auto_play(false);
     } catch (error: unknown) {
       set_run_error(error instanceof Error ? error.message : "执行仿真启动失败");
@@ -337,11 +347,15 @@ function ProductWorkbench() {
     set_run_auto_play(false);
     try {
       const updated_run = await disrupt_synthetic_run(simulation_run.run_id, disruption_type);
-      const disruption_entry = updated_run.timeline.find((entry) => entry.kind === "DISRUPTION");
-      if (disruption_entry) {
+      const first_disruption_entry = updated_run.timeline.find((entry) => entry.kind === "DISRUPTION");
+      if (first_disruption_entry) {
         set_first_disruption((current) => current?.run_id === updated_run.run_id
           ? current
-          : { run_id: updated_run.run_id, sequence: disruption_entry.sequence });
+          : { run_id: updated_run.run_id, sequence: first_disruption_entry.sequence });
+      }
+      const latest_disruption_entry = updated_run.timeline[updated_run.timeline.length - 1];
+      if (latest_disruption_entry?.kind === "DISRUPTION") {
+        set_latest_disruption_seen({ run_id: updated_run.run_id, sequence: latest_disruption_entry.sequence, current_minute: latest_disruption_entry.current_minute, route_count: latest_disruption_entry.route_count });
       }
       set_simulation_run(updated_run);
     } catch (error: unknown) {
@@ -458,6 +472,18 @@ function ProductWorkbench() {
   const first_disruption_sequence = first_disruption !== null && first_disruption.run_id === simulation_run?.run_id
     ? first_disruption.sequence
     : simulation_run?.timeline.find((entry) => entry.kind === "DISRUPTION")?.sequence;
+  const latest_disruption = [...(simulation_run?.timeline ?? [])].reverse().find((entry) => entry.kind === "DISRUPTION")
+    ?? (latest_disruption_seen !== null && latest_disruption_seen.run_id === simulation_run?.run_id ? latest_disruption_seen : undefined);
+  const before_latest_disruption = latest_disruption && simulation_run?.timeline.find((entry) => entry.sequence === latest_disruption.sequence - 1);
+  const latest_event_parts = simulation_run?.last_event?.match(/^(.+?)：(.+?)；重规划结果：/);
+  const current_route_count = simulation_run?.routes.length ?? 0;
+  const route_change_label = before_latest_disruption && latest_disruption
+    ? before_latest_disruption.route_count === latest_disruption.route_count
+      ? `路线数保持 ${latest_disruption.route_count} 条${latest_disruption.route_count === current_route_count ? "（当前）" : `；当前 ${current_route_count} 条`}`
+      : latest_disruption.route_count === current_route_count
+        ? `路线 ${before_latest_disruption.route_count} → ${current_route_count} 条（当前）`
+        : `扰动时路线 ${before_latest_disruption.route_count} → ${latest_disruption.route_count} 条；当前 ${current_route_count} 条`
+    : `当前路线 ${current_route_count} 条；扰动前数据不在当前时间线中`;
   const workflow_steps = [
     { label: "场景准备", complete: scenario_ready },
     { label: "治理研判", complete: assessment_ready },
@@ -649,9 +675,16 @@ function ProductWorkbench() {
               </>}
 
               <div className={`cockpit-event${simulation_run.last_event ? " has-event" : ""}`}>
-                <small>最近事件与可执行状态</small>
-                <strong>{simulation_run.last_event ? event_summary_label(simulation_run.last_event) : simulation_run.status === "COMPLETED" ? "本轮自然完成，未注入扰动。" : "尚未注入扰动"}</strong>
-                <span>剩余任务 {simulation_run.task_count - simulation_run.completed_task_count} 个 · 当前路线 {simulation_run.routes.length} 条 · {simulation_run.last_event ? replan_status_label(simulation_run.last_replan_status) : `初始方案${initial_plan_status_label(simulation_run.last_replan_status)}`}</span>
+                {simulation_run.last_event ? <>
+                  <small>最近一次扰动的因果说明</small>
+                  <div className="cockpit-causal-row"><b>事件</b><span>{latest_event_parts ? `${latest_event_parts[1]} · ${latest_event_parts[2]}` : simulation_run.last_event} · {latest_disruption ? format_simulation_time(latest_disruption.current_minute) : "发生时刻未保留在当前时间线中"}</span></div>
+                  <div className="cockpit-causal-row"><b>系统应对</b><span>确定性规则重新研判，OR-Tools 尝试调度；有候选方案时再独立校验。</span></div>
+                  <div className="cockpit-causal-row"><b>执行结果</b><span>{disruption_result_label(simulation_run.last_replan_status)}<br />{route_change_label}</span></div>
+                </> : <>
+                  <small>最近事件与可执行状态</small>
+                  <strong>{simulation_run.status === "COMPLETED" ? "本轮自然完成，未注入扰动。" : "尚未注入扰动"}</strong>
+                  <span>剩余任务 {simulation_run.task_count - simulation_run.completed_task_count} 个 · 当前路线 {current_route_count} 条 · 初始方案{initial_plan_status_label(simulation_run.last_replan_status)}</span>
+                </>}
               </div>
 
               {simulation_run.status === "COMPLETED" && <div className="cockpit-result-actions">

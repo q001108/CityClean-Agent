@@ -60,6 +60,9 @@ body { background: #061019; }
 .cockpit-event.has-event { background: rgba(76,29,14,.34); border-color: rgba(251,146,60,.34); }
 .cockpit-event strong { color: #f8fafc; font-size: .8rem; line-height: 1.4; }
 .cockpit-event span { color: #a8c2c3; font-size: .72rem; }
+.cockpit-causal-row { display: grid; grid-template-columns: 4.2rem minmax(0,1fr); gap: .4rem; align-items: start; min-width: 0; padding-top: .32rem; border-top: 1px solid rgba(251,146,60,.15); }
+.cockpit-causal-row b { color: #fed7aa; font-size: .72rem; white-space: nowrap; }
+.cockpit-causal-row span { overflow-wrap: anywhere; line-height: 1.45; }
 .cockpit-detail-link { margin-top: auto; padding: .35rem; color: #8ddfd5; background: transparent; border: 0; cursor: pointer; font-size: .76rem; text-decoration: underline; text-underline-offset: 3px; }
 .experiment-details { overflow: hidden; scroll-margin-top: .75rem; background: rgba(8,24,35,.58); border: 1px solid rgba(251,191,36,.18); border-radius: 10px; }
 .experiment-details > summary { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: .85rem 1rem; color: #e7eeee; cursor: pointer; list-style: none; }
