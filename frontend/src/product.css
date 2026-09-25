@@ -31,6 +31,43 @@ body { background: #061019; }
 .next-action-label { color: #5eead4 !important; font-size: .7rem; font-weight: 800; letter-spacing: .12em; }
 .next-action-panel strong { color: #ecfeff; font-size: .92rem; line-height: 1.4; }
 .next-action-buttons { flex: 0 0 auto; }
+.simulation-cockpit { display: grid; grid-template-columns: minmax(0,1fr) clamp(360px,31vw,420px); gap: 1rem; height: 640px; scroll-margin-top: .75rem; }
+.cockpit-map-card { height: 640px; }
+.cockpit-map-card .ant-card-body { display: flex; }
+.cockpit-map-card .product-map-shell { flex: 1; min-height: 0; }
+.cockpit-control { display: flex; flex-direction: column; gap: .72rem; height: 640px; min-width: 0; overflow: auto; padding: .9rem; color: #d9f4f1; background: linear-gradient(155deg,rgba(9,34,45,.98),rgba(11,24,39,.98)); border: 1px solid rgba(94,234,212,.28); border-radius: 11px; box-shadow: 0 18px 44px rgba(0,0,0,.24); }
+.cockpit-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: .7rem; padding-bottom: .65rem; border-bottom: 1px solid rgba(94,234,212,.18); }
+.cockpit-heading > div { display: grid; gap: .12rem; }
+.cockpit-heading strong { color: #f0fdfa; font-size: 1rem; }
+.cockpit-eyebrow { color: #5eead4 !important; font-size: .68rem; font-weight: 800; letter-spacing: .12em; }
+.cockpit-empty { display: grid; gap: .7rem; padding: .8rem; background: rgba(5,18,27,.58); border-radius: 8px; }
+.cockpit-context-grid, .cockpit-run-metrics { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: .5rem; }
+.cockpit-context-grid span, .cockpit-run-metrics span { display: grid; gap: .13rem; min-width: 0; padding: .58rem .62rem; background: rgba(5,24,34,.76); border: 1px solid rgba(94,234,212,.13); border-radius: 7px; }
+.cockpit-context-grid small, .cockpit-run-metrics small, .cockpit-action-group > small, .cockpit-event > small { color: #8eaeaf; font-size: .7rem; }
+.cockpit-context-grid b, .cockpit-run-metrics b { overflow: hidden; color: #ccfbf1; font-size: .84rem; text-overflow: ellipsis; white-space: nowrap; }
+.cockpit-guidance { padding: .7rem; background: rgba(73,46,8,.27); border: 1px solid rgba(251,191,36,.2); border-radius: 8px; }
+.cockpit-guidance p { margin: .42rem 0 0; color: #d8e7e7; font-size: .8rem; line-height: 1.45; }
+.cockpit-primary-actions, .cockpit-result-actions { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: .55rem; }
+.cockpit-summary-card { display: grid; gap: .6rem; }
+.cockpit-summary-card > div:first-child { display: flex; align-items: center; justify-content: space-between; gap: .7rem; padding: .6rem .7rem; background: rgba(31,41,55,.5); border-radius: 7px; }
+.cockpit-summary-card small { color: #8eaeaf; }
+.cockpit-status-line { display: flex; align-items: center; gap: .55rem; padding: .65rem .7rem; background: rgba(6,78,59,.2); border: 1px solid rgba(52,211,153,.2); border-radius: 8px; font-size: .78rem; }
+.cockpit-action-group { display: grid; gap: .38rem; }
+.cockpit-action-group > div { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: .42rem; }
+.cockpit-disruptions > div { grid-template-columns: repeat(2,minmax(0,1fr)); }
+.cockpit-action-group .ant-btn { min-width: 0; padding-inline: .35rem; font-size: .78rem; }
+.cockpit-event { display: grid; gap: .24rem; padding: .62rem .7rem; background: rgba(15,23,42,.55); border: 1px solid rgba(148,163,184,.16); border-radius: 8px; }
+.cockpit-event.has-event { background: rgba(76,29,14,.34); border-color: rgba(251,146,60,.34); }
+.cockpit-event strong { color: #f8fafc; font-size: .8rem; line-height: 1.4; }
+.cockpit-event span { color: #a8c2c3; font-size: .72rem; }
+.cockpit-detail-link { margin-top: auto; padding: .35rem; color: #8ddfd5; background: transparent; border: 0; cursor: pointer; font-size: .76rem; text-decoration: underline; text-underline-offset: 3px; }
+.experiment-details { overflow: hidden; scroll-margin-top: .75rem; background: rgba(8,24,35,.58); border: 1px solid rgba(251,191,36,.18); border-radius: 10px; }
+.experiment-details > summary { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: .85rem 1rem; color: #e7eeee; cursor: pointer; list-style: none; }
+.experiment-details > summary::-webkit-details-marker { display: none; }
+.experiment-details > summary > span { display: flex; flex-wrap: wrap; align-items: baseline; gap: .55rem; }
+.experiment-details > summary small { color: #8fa6a8; }
+.experiment-details[open] > summary { border-bottom: 1px solid rgba(251,191,36,.14); }
+.experiment-details .simulation-card { border: 0; border-radius: 0; }
 .product-main-grid { display: grid; grid-template-columns: minmax(0,2fr) minmax(300px,.8fr); gap: 1rem; min-height: 590px; }
 .product-map-card, .product-card { background: rgba(10,30,42,.78); border-color: rgba(94,234,212,.18); }
 .product-map-card { display: flex; flex-direction: column; min-height: 0; }
@@ -179,7 +216,7 @@ body { background: #061019; }
 .vehicle-timeline-fleet small { overflow: hidden; color: #94a3b8; text-overflow: ellipsis; white-space: nowrap; }
 @keyframes live-pulse { 50% { box-shadow: 0 0 0 .48rem rgba(45,212,191,0); } }
 .route-loading { display: flex; min-height: 100vh; gap: .8rem; align-items: center; justify-content: center; color: #bceae5; background: #061019; }
-@media (max-width: 1100px) { .workbench-intro { grid-template-areas: "boundary" "steps" "action"; grid-template-columns: 1fr; } .system-status-content { grid-template-columns: 1fr 1fr; } .secondary-entry-card { grid-column: 1 / -1; } }
+@media (max-width: 1100px) { .workbench-intro { grid-template-areas: "boundary" "steps" "action"; grid-template-columns: 1fr; } .simulation-cockpit { grid-template-columns: 1fr; height: auto; } .cockpit-map-card { height: 600px; } .cockpit-control { height: auto; max-height: none; } .system-status-content { grid-template-columns: 1fr 1fr; } .secondary-entry-card { grid-column: 1 / -1; } }
 @media (max-width: 980px) { .product-header { align-items: flex-start; flex-direction: column; gap: .8rem; } .product-main-grid { grid-template-columns: 1fr; } .product-sidebar { display: grid; grid-template-columns: 1fr 1fr; } .simulation-metrics, .dispatch-controls, .run-metrics, .vehicle-timeline-fleet { grid-template-columns: repeat(2,minmax(0,1fr)); } .assessment-grid, .experiment-score-grid { grid-template-columns: 1fr; } }
-@media (max-width: 700px) { .workflow-steps { grid-template-columns: repeat(2,minmax(0,1fr)); } .next-action-panel { align-items: flex-start; flex-direction: column; } .next-action-buttons { width: 100%; } .system-status-content { grid-template-columns: 1fr; } .secondary-entry-card { grid-column: auto; } }
+@media (max-width: 700px) { .workflow-steps { grid-template-columns: repeat(2,minmax(0,1fr)); } .next-action-panel { align-items: flex-start; flex-direction: column; } .next-action-buttons { width: 100%; } .cockpit-map-card { height: 520px; } .cockpit-primary-actions, .cockpit-result-actions { grid-template-columns: 1fr; } .system-status-content { grid-template-columns: 1fr; } .secondary-entry-card { grid-column: auto; } }
 @media (max-width: 640px) { .product-sidebar { grid-template-columns: 1fr; } .facility-form { grid-template-columns: 1fr; } .facility-address { grid-column: auto; } .simulation-toolbar, .dispatch-builder-heading, .run-console-heading, .assessment-actions, .assessment-confirm, .experiment-comparison-heading, .vehicle-timeline-heading { align-items: flex-start; flex-direction: column; } .simulation-metrics, .simulation-risk-list > div, .dispatch-controls, .dispatch-summary, .dispatch-routes, .run-metrics, .assessment-fact-strip, .experiment-score-metrics, .vehicle-timeline-fleet { grid-template-columns: 1fr; } .vehicle-timeline-entry { grid-template-columns: 58px minmax(0,1fr); } .vehicle-timeline-entry::before { left: 27px; } .product-map-shell, .product-map-empty { min-height: 420px; } }

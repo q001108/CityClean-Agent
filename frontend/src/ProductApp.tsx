@@ -77,6 +77,31 @@ function format_simulation_time(minute: number): string {
   return `${String(hour).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
 }
 
+function run_status_label(status: SyntheticRunSnapshot["status"]): string {
+  if (status === "COMPLETED") return "执行完成";
+  if (status === "NEEDS_ATTENTION") return "需要人工处理";
+  return "执行中";
+}
+
+function replan_status_label(status: string): string {
+  if (status === "SUCCESS") return "重规划成功";
+  if (status === "NOT_RUN") return "尚未重规划";
+  return status === "VERIFICATION_FAILED" ? "独立校验未通过" : "重规划需要处理";
+}
+
+function initial_plan_status_label(status: string): string {
+  if (status === "SUCCESS") return "已校验通过";
+  if (status === "NOT_RUN") return "尚未校验";
+  return status === "VERIFICATION_FAILED" ? "校验未通过" : "方案需要处理";
+}
+
+function event_summary_label(summary: string): string {
+  return summary
+    .replace("重规划结果：SUCCESS", "重规划结果：重规划成功")
+    .replace("重规划结果：NOT_RUN", "重规划结果：尚未重规划")
+    .replace("重规划结果：VERIFICATION_FAILED", "重规划结果：独立校验未通过");
+}
+
 type SyntheticDisruptionType = "ROAD_CLOSURE" | "VEHICLE_BREAKDOWN" | "WASTE_OVERFLOW" | "URGENT_TASK";
 
 function dispatch_score(dispatch: SyntheticDispatch, assessment: SyntheticAssessment) {
@@ -128,6 +153,8 @@ function ProductWorkbench() {
   const [dispatch_results, set_dispatch_results] = useState<Partial<Record<SyntheticAssessmentMode, SyntheticDispatch>>>({});
   const [active_assessment_mode, set_active_assessment_mode] = useState<SyntheticAssessmentMode | null>(null);
   const [simulation_run, set_simulation_run] = useState<SyntheticRunSnapshot | null>(null);
+  // The API retains only 48 timeline entries, so keep the first disruption boundary locally.
+  const [first_disruption, set_first_disruption] = useState<{ run_id: string; sequence: number } | null>(null);
   const [run_loading, set_run_loading] = useState(false);
   const [run_error, set_run_error] = useState("");
   const [run_auto_play, set_run_auto_play] = useState(false);
@@ -163,6 +190,7 @@ function ProductWorkbench() {
     set_simulation_error("");
     set_simulation_dispatch(null);
     set_simulation_run(null);
+    set_first_disruption(null);
     set_run_auto_play(false);
     set_dispatch_error("");
     set_assessments({});
@@ -271,6 +299,7 @@ function ProductWorkbench() {
       const started = await start_synthetic_run(current_dispatch_request());
       set_simulation_dispatch(started.dispatch);
       set_simulation_run(started.run);
+      set_first_disruption(null);
       set_run_auto_play(false);
     } catch (error: unknown) {
       set_run_error(error instanceof Error ? error.message : "执行仿真启动失败");
@@ -307,7 +336,14 @@ function ProductWorkbench() {
     set_run_error("");
     set_run_auto_play(false);
     try {
-      set_simulation_run(await disrupt_synthetic_run(simulation_run.run_id, disruption_type));
+      const updated_run = await disrupt_synthetic_run(simulation_run.run_id, disruption_type);
+      const disruption_entry = updated_run.timeline.find((entry) => entry.kind === "DISRUPTION");
+      if (disruption_entry) {
+        set_first_disruption((current) => current?.run_id === updated_run.run_id
+          ? current
+          : { run_id: updated_run.run_id, sequence: disruption_entry.sequence });
+      }
+      set_simulation_run(updated_run);
     } catch (error: unknown) {
       set_run_error(error instanceof Error ? error.message : "扰动注入失败");
     } finally {
@@ -419,6 +455,9 @@ function ProductWorkbench() {
   const disruption_skipped = simulation_run?.status === "COMPLETED" && !simulation_run.last_event;
   const result_ready = simulation_run?.status === "COMPLETED"
     || Boolean(simulation_run?.last_event && simulation_run.last_replan_status !== "NOT_RUN");
+  const first_disruption_sequence = first_disruption !== null && first_disruption.run_id === simulation_run?.run_id
+    ? first_disruption.sequence
+    : simulation_run?.timeline.find((entry) => entry.kind === "DISRUPTION")?.sequence;
   const workflow_steps = [
     { label: "场景准备", complete: scenario_ready },
     { label: "治理研判", complete: assessment_ready },
@@ -442,9 +481,20 @@ function ProductWorkbench() {
           : !disruption_ready && simulation_run.status === "RUNNING"
             ? "DISRUPTION"
             : "RESULT";
+  const active_assessment = active_assessment_mode === null ? null : assessments[active_assessment_mode] ?? null;
+  const active_decision = active_assessment?.policy_decision ?? null;
+  const current_stage_label = workflow_steps[current_step_index]?.label ?? "场景准备";
 
   function scroll_to(element_id: string) {
     document.getElementById(element_id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  function open_experiment_details() {
+    const details = document.getElementById("experiment-details");
+    if (details instanceof HTMLDetailsElement) {
+      details.open = true;
+      details.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
   }
 
   return <ConfigProvider theme={{ algorithm: theme.darkAlgorithm, token: { colorPrimary: "#2dd4bf", borderRadius: 10, fontFamily: "Inter, 'Microsoft YaHei', sans-serif" } }}>
@@ -496,20 +546,128 @@ function ProductWorkbench() {
                 : "执行结果已经产生，可查看车辆状态、扰动影响和重规划结果。"}</strong>}
             </div>
             <Space wrap className="next-action-buttons">
-              {next_action === "SCENARIO" && <Button type="primary" loading={simulation_loading} onClick={() => void load_simulation(simulation_seed)}>准备合成场景</Button>}
-              {next_action === "ASSESSMENT" && <>
-                <Button type="primary" loading={assessment_loading === "RULE"} onClick={() => void handle_assessment("RULE")}>运行规则研判</Button>
-                <Button loading={assessment_loading === "DEEPSEEK"} onClick={() => void handle_assessment("DEEPSEEK")}>使用 DeepSeek 研判</Button>
-              </>}
-              {next_action === "DISPATCH" && <Button type="primary" loading={dispatch_loading} onClick={() => void handle_simulation_dispatch()}>生成当前策略方案</Button>}
-              {next_action === "RUN" && <Button type="primary" loading={run_loading} onClick={() => void handle_start_run()}>启动执行仿真</Button>}
-              {next_action === "DISRUPTION" && <Button type="primary" onClick={() => scroll_to("run-console")}>前往扰动控制</Button>}
-              {next_action === "RESULT" && <Button type="primary" onClick={() => scroll_to("run-console")}>查看执行结果</Button>}
+              <Button type="primary" onClick={() => scroll_to("simulation-cockpit")}>
+                {next_action === "RESULT" ? "查看执行结果" : next_action === "DISRUPTION" ? "继续当前步骤" : "进入仿真操作台"}
+              </Button>
             </Space>
           </div>
         </section>
 
-        <Card id="synthetic-experiment" className="simulation-card" title="合成运营实验" extra={<Tag color="gold">非真实业务数据</Tag>}>
+        <section id="simulation-cockpit" className="simulation-cockpit" aria-labelledby="cockpit-title">
+          <Card className="product-map-card cockpit-map-card" title={<span id="cockpit-title">实时仿真地图</span>} extra={<Text type="secondary">天地图底图 · 信阳市</Text>}>
+            <TiandituProductMap
+              snapshot={snapshot}
+              facilities={facilities}
+              pending_coordinate={pending_coordinate}
+              on_map_select={handle_map_select}
+              simulation={simulation}
+              simulation_dispatch={simulation_dispatch}
+              simulation_run={simulation_run}
+              runtime_summary={runtime_summary}
+            />
+          </Card>
+
+          <aside className="cockpit-control" aria-label="仿真操作台" aria-live="polite">
+            <div className="cockpit-heading">
+              <div><Text className="cockpit-eyebrow">仿真操作台</Text><strong>当前阶段：{current_stage_label}</strong></div>
+              <Tag color={simulation_run?.status === "NEEDS_ATTENTION" ? "error" : simulation_run?.status === "COMPLETED" ? "success" : "processing"}>
+                {simulation_run ? run_status_label(simulation_run.status) : dispatch_ready ? "等待启动" : assessment_ready ? "研判完成" : "场景就绪"}
+              </Tag>
+            </div>
+
+            {!scenario_ready && <div className="cockpit-empty"><Text>正在准备可复现合成场景…</Text><Button loading={simulation_loading} onClick={() => void load_simulation(simulation_seed)}>重新加载场景</Button></div>}
+
+            {scenario_ready && !assessment_ready && <>
+              <div className="cockpit-context-grid">
+                <span><small>场景种子</small><b>{simulation_seed}</b></span>
+                <span><small>候选数量</small><b>{dispatch_task_count} 个</b></span>
+                <span><small>治理预算</small><b>{service_target_budget} 个</b></span>
+                <span><small>车辆数量</small><b>{dispatch_vehicle_count} 辆</b></span>
+              </div>
+              <div className="cockpit-guidance"><Tag color="gold">合成运营数据</Tag><p>先选择一种治理研判方式。DeepSeek 只会在你主动点击后调用。</p></div>
+              <div className="cockpit-primary-actions">
+                <Button type="primary" loading={assessment_loading === "RULE"} onClick={() => void handle_assessment("RULE")}>运行规则研判</Button>
+                <Button loading={assessment_loading === "DEEPSEEK"} onClick={() => void handle_assessment("DEEPSEEK")}>使用 DeepSeek 研判</Button>
+              </div>
+            </>}
+
+            {scenario_ready && assessment_ready && !dispatch_ready && active_decision && <>
+              <div className="cockpit-summary-card">
+                <div><small>当前研判方式</small><strong>{active_assessment_mode === "DEEPSEEK" ? "DeepSeek 研判" : "规则基线"}</strong></div>
+                <div className="cockpit-context-grid">
+                  <span><small>选中目标</small><b>{active_decision.priority_targets.length} 个</b></span>
+                  <span><small>风险等级</small><b>{active_decision.risk_level} / 5</b></span>
+                  <span><small>治理策略</small><b>{policy_label(active_decision.policy_profile)}</b></span>
+                  <span><small>资源预算</small><b>{service_target_budget} 个</b></span>
+                </div>
+              </div>
+              <Button type="primary" block loading={dispatch_loading} onClick={() => void handle_simulation_dispatch()}>生成当前策略方案</Button>
+            </>}
+
+            {dispatch_ready && simulation_run === null && <>
+              <div className="cockpit-status-line"><Tag color="success">独立校验通过</Tag><span>路线由 OR-Tools 计算，可启动 CitySim 执行。</span></div>
+              <div className="cockpit-context-grid">
+                <span><small>已分配任务</small><b>{simulation_dispatch.summary.assigned_task_count} 个</b></span>
+                <span><small>启用车辆</small><b>{simulation_dispatch.summary.route_count} 辆</b></span>
+                <span><small>总路线距离</small><b>{simulation_dispatch.summary.total_route_distance_km.toFixed(1)} 千米</b></span>
+                <span><small>时限违约</small><b>{simulation_dispatch.summary.deadline_violation_count} 个</b></span>
+              </div>
+              <Button type="primary" block loading={run_loading} onClick={() => void handle_start_run()}>启动执行仿真</Button>
+            </>}
+
+            {simulation_run && <>
+              <div className="cockpit-run-metrics">
+                <span><small>仿真时刻</small><b>{format_simulation_time(simulation_run.current_minute)}</b></span>
+                <span><small>已推进</small><b>{simulation_run.elapsed_minutes} 分钟</b></span>
+                <span><small>完成任务</small><b>{simulation_run.completed_task_count} / {simulation_run.task_count}</b></span>
+                <span><small>满溢事件</small><b>{simulation_run.overflow_count}</b></span>
+                <span><small>故障车辆</small><b>{simulation_run.broken_vehicle_count}</b></span>
+                <span>
+                  <small>{simulation_run.last_event ? "最近重规划" : "初始方案"}</small>
+                  <b>{simulation_run.last_event ? replan_status_label(simulation_run.last_replan_status) : initial_plan_status_label(simulation_run.last_replan_status)}</b>
+                </span>
+              </div>
+
+              {simulation_run.status === "RUNNING" && <>
+                <div className="cockpit-action-group">
+                  <small>时间控制</small>
+                  <div>
+                    <Button type={run_auto_play ? "default" : "primary"} loading={run_loading && !run_auto_play} onClick={() => set_run_auto_play((current) => !current)}>{run_auto_play ? "暂停" : "自动运行"}</Button>
+                    <Button loading={run_loading} onClick={() => void handle_step_run(1)}>推进 5 分钟</Button>
+                    <Button loading={run_loading} onClick={() => void handle_step_run(6)}>推进 30 分钟</Button>
+                  </div>
+                </div>
+                <div className="cockpit-action-group cockpit-disruptions">
+                  <small>动态扰动（执行后立即重新研判、调度并校验）</small>
+                  <div>
+                    <Button danger loading={run_loading} disabled={simulation_run.available_road_disruptions.length === 0} onClick={() => void handle_disruption("ROAD_CLOSURE")}>道路封闭</Button>
+                    <Button danger loading={run_loading} disabled={simulation_run.available_vehicle_disruptions.length === 0} onClick={() => void handle_disruption("VEHICLE_BREAKDOWN")}>车辆故障</Button>
+                    <Button danger loading={run_loading} disabled={simulation_run.available_bin_disruptions.length === 0} onClick={() => void handle_disruption("WASTE_OVERFLOW")}>垃圾量突增</Button>
+                    <Button danger loading={run_loading} disabled={simulation_run.available_bin_disruptions.length === 0} onClick={() => void handle_disruption("URGENT_TASK")}>紧急清运</Button>
+                  </div>
+                </div>
+              </>}
+
+              <div className={`cockpit-event${simulation_run.last_event ? " has-event" : ""}`}>
+                <small>最近事件与可执行状态</small>
+                <strong>{simulation_run.last_event ? event_summary_label(simulation_run.last_event) : simulation_run.status === "COMPLETED" ? "本轮自然完成，未注入扰动。" : "尚未注入扰动"}</strong>
+                <span>剩余任务 {simulation_run.task_count - simulation_run.completed_task_count} 个 · 当前路线 {simulation_run.routes.length} 条 · {simulation_run.last_event ? replan_status_label(simulation_run.last_replan_status) : `初始方案${initial_plan_status_label(simulation_run.last_replan_status)}`}</span>
+              </div>
+
+              {simulation_run.status === "COMPLETED" && <div className="cockpit-result-actions">
+                <Button type="primary" onClick={open_experiment_details}>查看详细结果</Button>
+                <Button loading={simulation_loading} onClick={() => void load_simulation(simulation_seed)}>重新生成场景</Button>
+              </div>}
+            </>}
+
+            {(assessment_error || dispatch_error || run_error) && <Alert type="error" showIcon title="当前操作未完成" description={assessment_error || dispatch_error || run_error} />}
+            <button type="button" className="cockpit-detail-link" onClick={open_experiment_details}>查看实验参数与完整结果</button>
+          </aside>
+        </section>
+
+        <details id="experiment-details" className="experiment-details">
+          <summary><span><strong>实验参数与完整结果</strong><small>场景参数、研判详情、路线和车辆时间线</small></span><Tag>专家详情</Tag></summary>
+        <Card id="synthetic-experiment" className="simulation-card" title="高级实验控制与完整结果" extra={<Tag color="gold">非真实业务数据</Tag>}>
           <div className="simulation-toolbar">
             <div>
               <Text strong>确定性场景种子</Text>
@@ -657,7 +815,7 @@ function ProductWorkbench() {
                         <span><small>完成任务</small><b>{simulation_run.completed_task_count} / {simulation_run.task_count}</b></span>
                         <span><small>满溢事件</small><b>{simulation_run.overflow_count}</b></span>
                         <span><small>故障车辆</small><b>{simulation_run.broken_vehicle_count}</b></span>
-                        <span><small>最近重规划</small><b>{simulation_run.last_replan_status}</b></span>
+                        <span><small>{simulation_run.last_event ? "最近重规划" : "初始方案"}</small><b>{simulation_run.last_event ? replan_status_label(simulation_run.last_replan_status) : initial_plan_status_label(simulation_run.last_replan_status)}</b></span>
                       </div>
                       <div className="run-actions">
                         <Button type={run_auto_play ? "default" : "primary"} loading={run_loading && !run_auto_play} disabled={simulation_run.status !== "RUNNING"} onClick={() => set_run_auto_play((current) => !current)}>{run_auto_play ? "暂停自动运行" : "自动运行"}</Button>
@@ -668,7 +826,7 @@ function ProductWorkbench() {
                         <Button danger loading={run_loading} disabled={simulation_run.status !== "RUNNING" || simulation_run.available_bin_disruptions.length === 0} onClick={() => void handle_disruption("WASTE_OVERFLOW")}>模拟垃圾量突增</Button>
                         <Button danger loading={run_loading} disabled={simulation_run.status !== "RUNNING" || simulation_run.available_bin_disruptions.length === 0} onClick={() => void handle_disruption("URGENT_TASK")}>模拟紧急清运</Button>
                       </div>
-                      {simulation_run.last_event && <Alert className="run-event" type={simulation_run.status === "NEEDS_ATTENTION" ? "warning" : "info"} showIcon title="最近扰动与重规划" description={simulation_run.last_event} />}
+                      {simulation_run.last_event && <Alert className="run-event" type={simulation_run.status === "NEEDS_ATTENTION" ? "warning" : "info"} showIcon title="最近扰动与重规划" description={event_summary_label(simulation_run.last_event)} />}
                       <div className="vehicle-timeline">
                         <div className="vehicle-timeline-heading">
                           <div><Text strong>车辆运行时间线</Text><Text type="secondary"> 每个节点均来自 CitySim 真值快照</Text></div>
@@ -678,7 +836,7 @@ function ProductWorkbench() {
                           {[...simulation_run.timeline].reverse().map((entry) => <div key={entry.sequence} className={`vehicle-timeline-entry vehicle-timeline-${entry.kind.toLowerCase()}`}>
                             <div className="vehicle-timeline-marker"><b>{format_simulation_time(entry.current_minute)}</b><small>#{entry.sequence}</small></div>
                             <div className="vehicle-timeline-content">
-                              <div><strong>{entry.summary}</strong><small>完成 {entry.completed_task_count}/{simulation_run.task_count} · 路线 {entry.route_count} · 重规划 {entry.replan_status}</small></div>
+                              <div><strong>{entry.kind === "DISRUPTION" ? event_summary_label(entry.summary) : entry.summary}</strong><small>完成 {entry.completed_task_count}/{simulation_run.task_count} · 路线 {entry.route_count} · {simulation_run.last_event && (first_disruption_sequence === undefined || entry.sequence >= first_disruption_sequence) ? replan_status_label(entry.replan_status) : `初始方案${initial_plan_status_label(entry.replan_status)}`}</small></div>
                               <div className="vehicle-timeline-fleet">{entry.vehicles.map((vehicle) => <span key={vehicle.vehicle_id}>
                                 <b>{vehicle.vehicle_id}</b>
                                 <em>{vehicle_status_label(vehicle.status)}</em>
@@ -696,19 +854,7 @@ function ProductWorkbench() {
             <Paragraph className="simulation-disclosure">{simulation.disclaimer} 当前沙盘用于验证研判字段、风险排序、调度约束与独立校验链路，不写入设施台账或生产 Runtime。</Paragraph>
           </>}
         </Card>
-
-        <Card className="product-map-card product-map-after-workflow" title="合成运行地图" extra={<Text type="secondary">天地图底图 · 信阳市</Text>}>
-          <TiandituProductMap
-            snapshot={snapshot}
-            facilities={facilities}
-            pending_coordinate={pending_coordinate}
-            on_map_select={handle_map_select}
-            simulation={simulation}
-            simulation_dispatch={simulation_dispatch}
-            simulation_run={simulation_run}
-            runtime_summary={runtime_summary}
-          />
-        </Card>
+        </details>
 
         <details className="system-status-panel">
           <summary>
