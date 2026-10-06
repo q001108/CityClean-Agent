@@ -43,6 +43,40 @@ CityClean-Agent 是一个面向城市环卫资源约束场景的智能决策仿�
 
 ## 本地运行
 
+### Docker Compose 合成 Demo
+
+启动 Docker Engine 后，在项目根目录执行：
+
+```powershell
+docker compose up -d --build
+```
+
+如果本机从官方 PyPI 下载 Linux 包超时，可仅对这次构建指定包源，再启动服务：
+
+```powershell
+docker compose build --build-arg PIP_INDEX_URL=https://mirrors.cloud.tencent.com/pypi/simple api
+docker compose up -d
+```
+
+打开 `http://127.0.0.1:8088/`。页面与 `/api` 使用同一入口；可用
+`http://127.0.0.1:8088/api/v1/health` 检查后端。查看状态使用
+`docker compose ps`；停止本项目容器使用 `docker compose down`（不要添加
+`-v`）。容器中的仿真会话只保存在进程内存，停止后不会保留。
+
+默认无需 API Key，即可使用规则研判、合成调度和执行仿真。仅在主动使用
+DeepSeek 研判时，才需要在启动 Compose 的宿主机环境提供
+`DEEPSEEK_API_KEY`；不要把 Key 写入仓库或镜像。天地图 Key 可选：如需底图，
+在构建前将 `VITE_TIANDITU_KEY` 设置为宿主机环境变量，再执行上述构建命令。
+Vite 会将它写入浏览器静态产物，因此它不是服务端秘密；不配置时地图区域会
+显示缺少密钥的提示，调度和仿真操作仍可使用，但不会显示底图与地图覆盖物。
+不要将 `frontend/.env.local` 或根目录 `.env` 放入镜像。
+
+此入口只绑定本机 `127.0.0.1:8088`，用于本地合成 Demo。默认应用不会注入
+生产 Runtime 或设施仓储；相应状态仍显示 unavailable／503，不能当作真实城市
+运营数据。当前 Compose 未配置公网访问、认证或持久化服务。
+
+### 开发环境
+
 项目规定使用 Conda 环境 `langchain1.2`。
 
 ### 1. 安装后端

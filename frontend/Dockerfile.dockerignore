@@ -1,0 +1,15 @@
+*
+!frontend
+!frontend/package.json
+!frontend/package-lock.json
+!frontend/index.html
+!frontend/tsconfig.json
+!frontend/vite.config.ts
+!frontend/nginx.conf
+!frontend/src
+!frontend/src/**
+!knowledge_base
+!knowledge_base/demo
+!knowledge_base/demo/fixtures
+!knowledge_base/demo/fixtures/vehicle_breakdown_replan.json
+!knowledge_base/demo/fixtures/complaint_urgent_v2.json
