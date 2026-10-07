@@ -1,4 +1,4 @@
-import { Alert, Tag } from "antd";
+import { Tag } from "antd";
 import { useEffect, useRef, useState } from "react";
 import { vehicle_status_label } from "./business_labels";
 import type { CitySnapshot, FacilityRecord, GeoCoordinate, SyntheticDispatch, SyntheticNetwork, SyntheticRunSnapshot } from "./runtime_api";
@@ -321,13 +321,70 @@ export function TiandituProductMap({
   }, [facilities, pending_coordinate, simulation, simulation_dispatch, simulation_run, snapshot, status]);
 
   if (status === "missing-key" || status === "error") {
-    return <div className="product-map-empty">
-      <Alert
-        type={status === "error" ? "warning" : "info"}
-        showIcon
-        title={status === "error" ? "天地图当前不可用" : "天地图密钥尚未配置"}
-        description={status === "error" ? error_message : "请在前端本地环境文件中配置天地图浏览器端密钥。"}
-      />
+    const nodes = new Map((simulation?.nodes ?? []).map((node) => [node.node_id, node]));
+    const coordinates = simulation?.nodes ?? [];
+    const longitudes = coordinates.map((point) => point.longitude);
+    const latitudes = coordinates.map((point) => point.latitude);
+    const min_longitude = Math.min(...longitudes);
+    const max_longitude = Math.max(...longitudes);
+    const min_latitude = Math.min(...latitudes);
+    const max_latitude = Math.max(...latitudes);
+    const longitude_span = Math.max(max_longitude - min_longitude, 0.000001);
+    const latitude_span = Math.max(max_latitude - min_latitude, 0.000001);
+    const project = (point: GeoCoordinate) => ({
+      x: 35 + ((point.longitude - min_longitude) / longitude_span) * 930,
+      y: 55 + ((max_latitude - point.latitude) / latitude_span) * 490,
+    });
+    const closed_edge_ids = new Set((simulation_run?.closed_road_ids ?? []).map(synthetic_edge_id_from_road_id));
+    const live_bins = new Map((simulation_run?.bins ?? []).map((bin) => [bin.bin_id, bin]));
+    const visible_routes = simulation_run?.routes ?? simulation_dispatch?.routes ?? [];
+    const route_colors = ["#22d3ee", "#a78bfa", "#34d399", "#fb923c", "#f472b6", "#60a5fa"];
+
+    return <div className="product-map-shell product-map-fallback">
+      <div className="product-map-fallback-heading">
+        <strong>合成路网视图</strong>
+        <span>非真实地图 · {status === "error" ? "天地图不可用" : "无需地图密钥"}</span>
+      </div>
+      {simulation ? <svg className="product-map-fallback-svg" viewBox="0 0 1000 600" role="img" aria-label="合成路网、调度路线、风险点和执行车辆">
+        {simulation.edges.map((edge) => {
+          const from = nodes.get(edge.from_node);
+          const to = nodes.get(edge.to_node);
+          if (!from || !to) return null;
+          const start = project(from);
+          const end = project(to);
+          const closed = closed_edge_ids.has(edge.edge_id);
+          return <line key={edge.edge_id} data-edge-id={edge.edge_id} x1={start.x} y1={start.y} x2={end.x} y2={end.y}
+            stroke={closed ? "#ef4444" : edge.congestion_level >= 0.72 ? "#d97706" : "#38606b"}
+            strokeWidth={closed ? 5 : edge.congestion_level >= 0.72 ? 2 : 1.5}
+            strokeOpacity={closed ? 0.95 : edge.congestion_level >= 0.72 ? 0.65 : 0.5}
+            strokeDasharray={closed ? "7 5" : undefined} />;
+        })}
+        {visible_routes.map((route, index) => <polyline key={route.vehicle_id} data-route-id={route.vehicle_id}
+          points={route.path.map((point) => { const position = project(point); return `${position.x},${position.y}`; }).join(" ")}
+          fill="none" stroke={route_colors[index % route_colors.length]} strokeWidth="5" strokeOpacity="0.9" strokeLinejoin="round" />)}
+        {simulation.bins.filter((bin) => bin.risk_level === "CRITICAL" || bin.risk_level === "HIGH")
+          .sort((first, second) => second.risk_score - first.risk_score).slice(0, 36).map((bin) => {
+            const position = project(bin);
+            const fill_ratio = live_bins.get(bin.bin_id)?.fill_ratio ?? bin.fill_ratio;
+            return <circle key={bin.bin_id} data-bin-id={bin.bin_id} cx={position.x} cy={position.y} r="4.5"
+              fill={bin.risk_level === "CRITICAL" ? "#fb7185" : "#fbbf24"} stroke="#081f30" strokeWidth="1.5"
+              onClick={() => set_selected_detail(`${bin.bin_id} · ${bin.site_name} · 当前装载率 ${Math.round(fill_ratio * 100)}% · 风险 ${bin.risk_score}`)} />;
+          })}
+        {simulation_run?.vehicles.map((vehicle) => {
+          const position = project(vehicle.coordinate);
+          return <circle key={vehicle.vehicle_id} data-vehicle-id={vehicle.vehicle_id} cx={position.x} cy={position.y} r="8"
+            fill={vehicle.status === "BROKEN" ? "#ef4444" : "#22d3ee"} stroke="#fff" strokeWidth="2"
+            onClick={() => set_selected_detail(`${vehicle.vehicle_id} · ${vehicle_status_label(vehicle.status)} · 载荷 ${Math.round(vehicle.current_load_liters)}/${Math.round(vehicle.capacity_liters)} 升`)} />;
+        })}
+      </svg> : <div className="product-map-fallback-loading">正在准备合成路网…</div>}
+      <div className="product-map-fallback-legend">
+        <span><i className="legend-simulation" />高风险点</span>
+        <span><i className="legend-simulation-route" />调度路线</span>
+        <span><i className="legend-run-vehicle" />车辆</span>
+        <span><i className="legend-closed-road" />封闭道路</span>
+      </div>
+      <div className="product-map-detail" aria-live="polite">{selected_detail}</div>
+      <div className="product-map-notice">{status === "error" ? `${error_message}；` : ""}仅显示可复现的合成路网，不表示真实道路或设施位置；此视图不支持真实地理选点。</div>
     </div>;
   }
 

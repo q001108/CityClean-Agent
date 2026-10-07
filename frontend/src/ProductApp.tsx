@@ -541,9 +541,9 @@ function ProductWorkbench() {
           <div className="mode-boundary">
             <div>
               <Tag color="gold">合成仿真模式</Tag>
-              <strong id="workbench-purpose">真实地图底图上的决策仿真实验</strong>
+              <strong id="workbench-purpose">{import.meta.env.VITE_TIANDITU_KEY?.trim() ? "真实地图底图上的决策仿真实验" : "合成路网中的决策仿真实验"}</strong>
             </div>
-            <p>地图底图来自天地图；车辆、垃圾桶、传感器和事件均为可复现合成数据。</p>
+            <p>{import.meta.env.VITE_TIANDITU_KEY?.trim() ? "地图底图来自天地图；" : "未配置地图密钥时显示合成路网，不使用真实底图；"}车辆、垃圾桶、传感器和事件均为可复现合成数据。</p>
             <small>当前运行于合成演示模式；生产城市状态源{runtime_ready ? "已连接" : "尚未启用"}，设施台账{facility_registry_error ? "尚未启用" : "可用"}，均不影响下方仿真实验。</small>
           </div>
 
@@ -580,7 +580,7 @@ function ProductWorkbench() {
         </section>
 
         <section id="simulation-cockpit" className="simulation-cockpit" aria-labelledby="cockpit-title">
-          <Card className="product-map-card cockpit-map-card" title={<span id="cockpit-title">实时仿真地图</span>} extra={<Text type="secondary">天地图底图 · 信阳市</Text>}>
+          <Card className="product-map-card cockpit-map-card" title={<span id="cockpit-title">实时仿真地图</span>} extra={<Text type="secondary">{import.meta.env.VITE_TIANDITU_KEY?.trim() ? "天地图底图 · 信阳市" : "合成路网 · 非真实地图"}</Text>}>
             <TiandituProductMap
               snapshot={snapshot}
               facilities={facilities}
