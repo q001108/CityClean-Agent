@@ -42,6 +42,14 @@
 - **未重新调用真实 DeepSeek**：当前测试与视频均为规则 / 离线模式。真实模型指标来自仓库冻结报告，不冒充本次在线实测；模型账号权限、费用与服务可用性未重新验证。
 - **真实地图与生产接入未验收**：投递默认流程使用无 Key 合成路网；权威 Runtime、设施仓储装配、认证、多人隔离和生产持久化不在当前默认产品能力内。
 - **Windows 编码差异**：直接只给测试父进程加 `-X utf8` 时，两个原有 CLI 子进程测试因 GBK / UTF-8 解码差异失败。通过给进程环境设置 `PYTHONUTF8=1` 后完整测试通过；没有修改或削弱测试断言。
+- **现有开发依赖公告**：`npm audit` 报告 `source-map-js@1.2.1` 存在 high 级别的 indexed source-map 输入导致事件循环拒绝服务问题，官方公告 [GHSA-68fv-2mgg-jv7q](https://github.com/advisories/GHSA-68fv-2mgg-jv7q)。依赖链为 Vite → PostCSS → source-map-js，仅属于开发/构建依赖；`npm audit --omit=dev` 报告 0 项漏洞。此处按既有版本交付，未自动运行 audit fix 或升级依赖；不能将此报告解释为所有安全风险均已排除。
+
+## 投递包解压复核
+
+- 从 ZIP 解压后逐项核对 manifest 摘要，175 个源码文件完整；没有本机 `.env`、node_modules 或 Git 历史。
+- 使用已验证的 Conda 依赖环境，将 Python 导入路径明确指向解压源码，健康接口与规则研判通过；未用原仓库的可编辑安装路径代替解压源码。
+- 在独立解压验收目录运行 `npm ci` 和 `npm run build`，均通过。该验收目录的 node_modules 与 dist 不会放回投递 ZIP。
+- 通过 Microsoft Edge 预览投递首页，并确认 MP4 可播放，时长 73.32 秒、画面 1366 × 768；PDF、源码 README、视频与 manifest 的本地链接均存在。自动化工具限制 `file:` 导航，因此使用临时 localhost 静态预览进行界面检查；离线首页本身不依赖脚本、外部字体或远程资源。
 
 ## 打包与版本核对
 
