@@ -8,7 +8,7 @@ CityClean-Agent 是一个面向城市环卫资源约束场景的智能决策仿�
 
 - [整体项目说明](docs/recruitment/project-overview.md) / [排版版 PDF](docs/recruitment/project-overview.pdf)：问题、架构、工程实践、评测与能力边界。
 - [独立启动说明](docs/recruitment/getting-started.md) / [排版版 PDF](docs/recruitment/getting-started.pdf)：Docker 与本地开发启动方式，附固定演示步骤。
-- [73 秒 MP4 演示](docs/media/cityclean-demo.mp4) / [视频说明](docs/recruitment/demo-guide.md)。
+- [73 秒中文字幕 MP4 演示](docs/media/cityclean-demo.mp4) / [视频说明](docs/recruitment/demo-guide.md)。
 - [本次验证记录](docs/recruitment/verification.md)与[投递包整理说明](docs/recruitment/README.md)。
 
 投递包提供离线首页、两份 PDF、MP4 视频、完整已提交源码和 SHA-256 清单。默认运行无需 API Key 或 GPU；首次安装运行依赖需要联网。
@@ -29,7 +29,7 @@ CityClean-Agent 是一个面向城市环卫资源约束场景的智能决策仿�
 
 ## 快速预览
 
-[观看 73 秒无声演示视频](docs/media/cityclean-demo.webm)：固定种子 `20260925`，依次展示规则研判、调度与独立校验、执行推进、道路封闭后的重规划。视频和下列截图均取自无天地图 Key 的 Docker Compose 合成 Demo，不代表真实城市道路或运营数据。
+[观看 73 秒中文字幕演示视频](docs/media/cityclean-demo.mp4)：固定种子 `20260925`，依次展示规则研判、调度与独立校验、执行推进、道路封闭后的重规划。无声视频已直接内嵌阶段说明字幕。视频和下列截图均取自无天地图 Key 的 Docker Compose 合成 Demo，不代表真实城市道路或运营数据。
 
 场景准备：30 个候选点、4 辆车、治理预算 10 个点。
 

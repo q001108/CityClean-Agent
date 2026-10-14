@@ -18,6 +18,7 @@ REQUIRED = {
     "docs/recruitment/project-overview.pdf": "01-project-overview.pdf",
     "docs/recruitment/getting-started.pdf": "02-getting-started.pdf",
     "docs/media/cityclean-demo.mp4": "03-demo.mp4",
+    "docs/media/cityclean-demo.zh-CN.srt": "03-demo.zh-CN.srt",
 }
 BLOCKED_PARTS = {".git", "node_modules", "__pycache__", ".pytest_cache", ".venv", "venv", ".playwright-cli"}
 SECRET_PATTERNS = (
@@ -88,7 +89,8 @@ def package(output_dir: Path) -> Path:
         "解压后双击 00-start-here.html，查看项目资料并播放演示视频。\n"
         "01-project-overview.pdf：整体项目说明、架构、评测与边界。\n"
         "02-getting-started.pdf：Docker / 本地开发启动说明及演示步骤。\n"
-        "03-demo.mp4：约 73 秒实际工作台录制，无声，H.264。\n"
+        "03-demo.mp4：约 73 秒实际工作台录制，无声，内嵌中文字幕，H.264。\n"
+        "03-demo.zh-CN.srt：可编辑的字幕时间轴；MP4 已直接包含字幕。\n"
         "04-source/CityClean-Agent/：完整已提交源码，含前后端、测试和评测资源。\n\n"
         "阅读和播放可以离线；首次安装运行依赖需要联网。默认演示无需 API Key 或 GPU。\n"
         "城市运营数据为合成数据；实时模型调用需要单独配置。\n"
