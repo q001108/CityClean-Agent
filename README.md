@@ -4,6 +4,15 @@ CityClean-Agent 是一个面向城市环卫资源约束场景的智能决策仿�
 
 > 当前项目没有接入真实政府环卫业务数据。垃圾桶、车辆、传感器和运营事件均为合成数据，不代表实际设施或运行状态。
 
+## 校招投递资料
+
+- [整体项目说明](docs/recruitment/project-overview.md) / [排版版 PDF](docs/recruitment/project-overview.pdf)：问题、架构、工程实践、评测与能力边界。
+- [独立启动说明](docs/recruitment/getting-started.md) / [排版版 PDF](docs/recruitment/getting-started.pdf)：Docker 与本地开发启动方式，附固定演示步骤。
+- [73 秒 MP4 演示](docs/media/cityclean-demo.mp4) / [视频说明](docs/recruitment/demo-guide.md)。
+- [本次验证记录](docs/recruitment/verification.md)与[投递包整理说明](docs/recruitment/README.md)。
+
+投递包提供离线首页、两份 PDF、MP4 视频、完整已提交源码和 SHA-256 清单。默认运行无需 API Key 或 GPU；首次安装运行依赖需要联网。
+
 ## 核心链路
 
 ```text
@@ -141,6 +150,7 @@ npm run dev:demo
 
 ```powershell
 conda activate langchain1.2
+$env:PYTHONUTF8 = "1"
 python -m pytest -q
 
 cd frontend

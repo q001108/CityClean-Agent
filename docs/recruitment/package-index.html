@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CityClean-Agent · 刘东海项目作品</title>
+  <style>
+    :root { color-scheme: light; --ink: #152d3b; --muted: #536977; --line: #dce7e8; --teal: #08776a; }
+    * { box-sizing: border-box; }
+    body { margin: 0; color: var(--ink); background: #f4f8f8; font: 16px/1.75 "Microsoft YaHei", "PingFang SC", system-ui, sans-serif; }
+    main { max-width: 1080px; margin: auto; padding: 56px 28px 32px; }
+    .eyebrow { color: var(--teal); font-size: 13px; letter-spacing: .15em; font-weight: 700; }
+    h1 { margin: 12px 0 6px; font-size: clamp(34px, 5vw, 56px); line-height: 1.2; letter-spacing: -.04em; }
+    .intro { max-width: 760px; font-size: 19px; color: var(--muted); }
+    .tags { display: flex; flex-wrap: wrap; gap: 8px; margin: 22px 0; }
+    .tag { border: 1px solid #cddfdd; border-radius: 6px; padding: 3px 10px; font-size: 13px; background: white; }
+    .author { color: var(--muted); font-size: 14px; }
+    .award { padding: 14px 18px; margin-top: 24px; border-left: 3px solid var(--teal); background: #e6f2ef; }
+    .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin: 30px 0; }
+    .card { padding: 22px; background: white; border: 1px solid var(--line); border-radius: 12px; text-decoration: none; color: var(--ink); }
+    .card:hover { border-color: var(--teal); }
+    .number { color: var(--teal); font-size: 13px; font-weight: 700; }
+    .card h2 { font-size: 20px; margin: 7px 0 5px; }
+    .card p { font-size: 14px; color: var(--muted); margin: 0; }
+    section { margin-top: 32px; }
+    section h2 { font-size: 23px; margin-bottom: 12px; }
+    video { display: block; width: 100%; background: #142b35; border: 1px solid var(--line); border-radius: 12px; }
+    .caption { font-size: 13px; color: var(--muted); margin-top: 10px; }
+    .flow { padding: 18px 22px; border: 1px solid var(--line); border-radius: 10px; background: white; }
+    .facts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+    .fact { padding: 20px; border-radius: 10px; background: #eaf1f3; }
+    .fact strong { font-size: 27px; display: block; }
+    .fact span { font-size: 13px; color: var(--muted); }
+    .boundary { color: var(--muted); font-size: 14px; padding: 20px 0; }
+    a { color: var(--teal); }
+    code { font-size: .9em; background: #e6eff0; padding: 2px 5px; border-radius: 3px; overflow-wrap: anywhere; }
+    footer { padding-top: 22px; border-top: 1px solid var(--line); color: var(--muted); font-size: 12px; }
+    @media (max-width: 720px) { main { padding: 32px 18px; } .grid, .facts { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+<main>
+  <div class="eyebrow">2026 CAMPUS RECRUITMENT · PROJECT PORTFOLIO</div>
+  <h1>CityClean-Agent</h1>
+  <p class="intro">城市环卫事件的智能决策、确定性调度与动态重规划。<br />从治理研判到执行反馈，展示可复核的 Agent 应用闭环。</p>
+  <p class="author">刘东海 · 独立开发 · Agent 应用开发 / Python 后端 / 软件研发</p>
+  <div class="tags"><span class="tag">FastAPI</span><span class="tag">Pydantic</span><span class="tag">LangChain DeepSeek</span><span class="tag">OR-Tools</span><span class="tag">React / TypeScript</span><span class="tag">Docker Compose</span></div>
+  <div class="award">此前参赛版本获得“华为杯”第八届中国研究生人工智能创新大赛国家三等奖，个人独立组队参赛。当前版本包含后续工程完善；获奖信息由作者提供。</div>
+
+  <nav class="grid" aria-label="项目资料">
+    <a class="card" href="01-project-overview.pdf"><div class="number">01 / OVERVIEW</div><h2>项目说明</h2><p>问题、整体架构、工程实践、评测与能力边界。</p></a>
+    <a class="card" href="02-getting-started.pdf"><div class="number">02 / QUICK START</div><h2>启动说明</h2><p>Docker 与本地开发两种方式，附三分钟演示步骤。</p></a>
+    <a class="card" href="04-source/CityClean-Agent/README.md"><div class="number">04 / SOURCE</div><h2>完整源码</h2><p>后端、前端、测试、配置、评测资源及原始文档。</p></a>
+  </nav>
+
+  <section>
+    <h2>73 秒看完整流程</h2>
+    <video controls preload="metadata" poster="04-source/CityClean-Agent/docs/media/cityclean-03-replanned.png">
+      <source src="03-demo.mp4" type="video/mp4" />
+      可直接打开同目录中的 <a href="03-demo.mp4">演示视频</a>。
+    </video>
+    <p class="caption">实际工作台录制 · 1366 × 768 · 无声 · 规则研判 · 合成数据。固定种子 20260925；30 个候选、4 辆车、治理预算 10 个点。展示研判、调度校验、执行推进和道路封闭后的重规划。</p>
+  </section>
+
+  <section>
+    <h2>职责明确的决策链</h2>
+    <div class="flow">风险事实 → 规则 / DeepSeek 研判 → PolicyDecision 契约 → OR-Tools 调度 → 独立 Verifier → CitySim 执行 → 事件反馈与重规划</div>
+    <p class="caption">模型负责治理策略；路线、容量、距离和 ETA 由确定性模块计算。真实 DeepSeek 为显式开启的可选能力。</p>
+  </section>
+
+  <section>
+    <h2>固定场景中的重规划效果</h2>
+    <div class="facts"><div class="fact"><strong>59.8%</strong><span>静态执行，不重规划</span></div><div class="fact"><strong>75.9%</strong><span>固定均衡策略重规划</span></div><div class="fact"><strong>79.6%</strong><span>确定性事件策略重规划</span></div></div>
+    <p class="caption">9 个固定场景 × 3 种条件；数字为各场景任务完成率的算术平均。第三项采用 MockEventAgent，不能解读为大模型收益。详细口径与历史真实模型失败分析见项目说明。</p>
+  </section>
+
+  <p class="boundary">默认演示不需要 API Key 或 GPU。城市道路、车辆和运营事件为合成数据；未接入真实政府运营系统。仿真会话在内存中，认证、多人隔离和生产持久化尚未实现。此包可以离线阅读与播放；安装运行时依赖仍需联网。</p>
+  <footer>投递版本 2026-10-14 · 源码提交 <code>@@SOURCE_COMMIT@@</code><br />文件清单与摘要：<a href="manifest.json">manifest.json</a> · <a href="SHA256SUMS.txt">SHA256SUMS.txt</a><br />GitHub：<a href="https://github.com/q001108/CityClean-Agent">q001108/CityClean-Agent</a>（整理时为私有仓库；外部查看需要仓库权限）</footer>
+</main>
+</body>
+</html>
